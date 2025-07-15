@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://www.signavio.com" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd">
+   <collaboration id="collaboration_1">
+      <participant id="participant_transferring_ms" name="Transferring Member State" processRef="process_transferring_ms"/>
+      <participant id="participant_responsible_ms" name="Member State responsible" processRef="process_responsible_ms"/>
+      <participant id="participant_applicant" name="Applicant / Representative" processRef="process_applicant"/>
+      <participant id="participant_commission" name="Commission" processRef="process_commission"/>
+      <messageFlow id="message_flow_consent" sourceRef="task_give_consent" targetRef="task_obtain_consent"/>
+      <messageFlow id="message_flow_health_data" sourceRef="task_transmit_info" targetRef="start_receive_info"/>
+   </collaboration>
+   <process id="process_transferring_ms" isExecutable="false">
+      <laneSet>
+         <lane id="lane_transferring">
+            <flowNodeRef>start_transfer_process</flowNodeRef>
+            <flowNodeRef>task_obtain_consent</flowNodeRef>
+            <flowNodeRef>task_transmit_info</flowNodeRef>
+            <flowNodeRef>end_transfer_process</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="start_transfer_process" name="Need to transfer health data arises"/>
+      <task id="task_obtain_consent" name="Obtain explicit consent">
+         <documentation>The transferring Member State shall only transmit the information...after having obtained the explicit consent of the applicant and/or of his or her representative...</documentation>
+      </task>
+      <task id="task_transmit_info" name="Transmit information in common health certificate">
+         <documentation>The exchange of information under this Article shall only take place between the health professionals...</documentation>
+      </task>
+      <endEvent id="end_transfer_process"/>
+      <sequenceFlow id="flow_transfer_1" sourceRef="start_transfer_process" targetRef="task_obtain_consent"/>
+      <sequenceFlow id="flow_transfer_2" sourceRef="task_obtain_consent" targetRef="task_transmit_info"/>
+      <sequenceFlow id="flow_transfer_3" sourceRef="task_transmit_info" targetRef="end_transfer_process"/>
+   </process>
+   <process id="process_responsible_ms" isExecutable="false">
+      <laneSet>
+         <lane id="lane_responsible">
+            <flowNodeRef>start_receive_info</flowNodeRef>
+            <flowNodeRef>task_address_needs</flowNodeRef>
+            <flowNodeRef>end_receive_process</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="start_receive_info" name="Health information received">
+         <messageEventDefinition messageRef="message_health_data"/>
+      </startEvent>
+      <task id="task_address_needs" name="Ensure special needs are adequately addressed">
+         <documentation>The Member State responsible shall ensure that those special needs are adequately addressed, including in particular any essential medical care that may be required. The processing of personal health data...shall only be carried out by a health professional...</documentation>
+      </task>
+      <endEvent id="end_receive_process"/>
+      <sequenceFlow id="flow_responsible_1" sourceRef="start_receive_info" targetRef="task_address_needs"/>
+      <sequenceFlow id="flow_responsible_2" sourceRef="task_address_needs" targetRef="end_receive_process"/>
+   </process>
+   <process id="process_applicant" isExecutable="false">
+      <laneSet>
+         <lane id="lane_applicant">
+            <flowNodeRef>start_applicant_process</flowNodeRef>
+            <flowNodeRef>task_give_consent</flowNodeRef>
+            <flowNodeRef>end_applicant_process</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="start_applicant_process"/>
+      <task id="task_give_consent" name="Give explicit consent"/>
+      <endEvent id="end_applicant_process"/>
+      <sequenceFlow id="flow_applicant_1" sourceRef="start_applicant_process" targetRef="task_give_consent"/>
+      <sequenceFlow id="flow_applicant_2" sourceRef="task_give_consent" targetRef="end_applicant_process"/>
+   </process>
+   <process id="process_commission" isExecutable="false">
+      <laneSet>
+         <lane id="lane_commission">
+            <flowNodeRef>task_draw_up_cert</flowNodeRef>
+            <flowNodeRef>task_adopt_conditions</flowNodeRef>
+         </lane>
+      </laneSet>
+      <task id="task_draw_up_cert" name="Draw up the common health certificate"/>
+      <task id="task_adopt_conditions" name="Adopt uniform conditions and practical arrangements for exchange"/>
+   </process>
+   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+      <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="collaboration_1">
+         <bpmndi:BPMNShape id="shape_participant_applicant" bpmnElement="participant_applicant" isHorizontal="true">
+            <omgdc:Bounds x="160" y="80" width="600" height="120"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_start_applicant_process" bpmnElement="start_applicant_process">
+            <omgdc:Bounds x="210" y="122" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_give_consent" bpmnElement="task_give_consent">
+            <omgdc:Bounds x="300" y="110" width="100" height="60"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_applicant_process" bpmnElement="end_applicant_process">
+            <omgdc:Bounds x="460" y="122" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge_flow_applicant_1" bpmnElement="flow_applicant_1">
+            <omgdi:waypoint x="246" y="140"/>
+            <omgdi:waypoint x="300" y="140"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_flow_applicant_2" bpmnElement="flow_applicant_2">
+            <omgdi:waypoint x="400" y="140"/>
+            <omgdi:waypoint x="460" y="140"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape id="shape_participant_transferring_ms" bpmnElement="participant_transferring_ms" isHorizontal="true">
+            <omgdc:Bounds x="160" y="230" width="600" height="160"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_start_transfer_process" bpmnElement="start_transfer_process">
+            <omgdc:Bounds x="210" y="292" width="36" height="36"/>
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="193" y="335" width="70" height="40"/>
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_obtain_consent" bpmnElement="task_obtain_consent">
+            <omgdc:Bounds x="300" y="280" width="100" height="80"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_transmit_info" bpmnElement="task_transmit_info">
+            <omgdc:Bounds x="460" y="280" width="100" height="80"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_transfer_process" bpmnElement="end_transfer_process">
+            <omgdc:Bounds x="620" y="292" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge_flow_transfer_1" bpmnElement="flow_transfer_1">
+            <omgdi:waypoint x="246" y="310"/>
+            <omgdi:waypoint x="300" y="310"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_flow_transfer_2" bpmnElement="flow_transfer_2">
+            <omgdi:waypoint x="400" y="320"/>
+            <omgdi:waypoint x="460" y="320"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_flow_transfer_3" bpmnElement="flow_transfer_3">
+            <omgdi:waypoint x="560" y="320"/>
+            <omgdi:waypoint x="620" y="310"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape id="shape_participant_responsible_ms" bpmnElement="participant_responsible_ms" isHorizontal="true">
+            <omgdc:Bounds x="160" y="420" width="600" height="160"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_start_receive_info" bpmnElement="start_receive_info">
+            <omgdc:Bounds x="210" y="482" width="36" height="36"/>
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="190" y="525" width="76" height="27"/>
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_address_needs" bpmnElement="task_address_needs">
+            <omgdc:Bounds x="300" y="460" width="100" height="80"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_receive_process" bpmnElement="end_receive_process">
+            <omgdc:Bounds x="460" y="482" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge_flow_responsible_1" bpmnElement="flow_responsible_1">
+            <omgdi:waypoint x="246" y="500"/>
+            <omgdi:waypoint x="300" y="500"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_flow_responsible_2" bpmnElement="flow_responsible_2">
+            <omgdi:waypoint x="400" y="500"/>
+            <omgdi:waypoint x="460" y="500"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape id="shape_participant_commission" bpmnElement="participant_commission" isHorizontal="true">
+            <omgdc:Bounds x="160" y="610" width="600" height="140"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_draw_up_cert" bpmnElement="task_draw_up_cert">
+            <omgdc:Bounds x="210" y="650" width="100" height="80"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_adopt_conditions" bpmnElement="task_adopt_conditions">
+            <omgdc:Bounds x="360" y="650" width="100" height="80"/>
+            <bpmndi:BPMNLabel/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge_message_flow_consent" bpmnElement="message_flow_consent">
+            <omgdi:waypoint x="350" y="200"/>
+            <omgdi:waypoint x="350" y="280"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_message_flow_health_data" bpmnElement="message_flow_health_data">
+            <omgdi:waypoint x="510" y="360"/>
+            <omgdi:waypoint x="510" y="440"/>
+            <omgdi:waypoint x="228" y="440"/>
+            <omgdi:waypoint x="228" y="482"/>
+         </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+   </bpmndi:BPMNDiagram>
+</definitions>

@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Donor" name="Donor" processRef="Process_Donor" />
+    <bpmn:participant id="Participant_BloodEstablishment" name="Blood Establishment" processRef="Process_BloodEstablishment" />
+    <bpmn:messageFlow id="MessageFlow_Arrival" sourceRef="Task_Arrive" targetRef="StartEvent_DonorArrives" />
+    <bpmn:messageFlow id="MessageFlow_ConsentInfo" sourceRef="Task_ProvideInfoAndObtainConsent" targetRef="Task_ReviewInfoAndConsent" />
+    <bpmn:messageFlow id="MessageFlow_AssessmentInfo" sourceRef="Task_PerformScreening" targetRef="Task_CompleteChecks" />
+    <bpmn:messageFlow id="MessageFlow_Decision" sourceRef="Gateway_IsEligible" targetRef="Gateway_DonationDecision" />
+    <bpmn:messageFlow id="MessageFlow_DeferralExplanation" sourceRef="Task_ExplainDeferral" targetRef="Task_ReceiveDeferralReason" />
+    <bpmn:messageFlow id="MessageFlow_Donation" sourceRef="Task_CollectDonation" targetRef="Task_Donate" />
+    <bpmn:messageFlow id="MessageFlow_PostDonationInfo" sourceRef="Task_ReportPostDonation" targetRef="StartEvent_PDIReceived" />
+    <bpmn:messageFlow id="MessageFlow_Instructions" sourceRef="Task_ProvideInstructions" targetRef="Task_ReceiveInstructions" />
+  </bpmn:collaboration>
+  <bpmn:signal id="Signal_PostDonation" name="PostDonationSignal" />
+  <bpmn:process id="Process_Donor" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_WantsToDonate" name="Wants to Donate">
+      <bpmn:outgoing>Flow_01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_Arrive" name="Arrive at Establishment &amp; Provide ID">
+      <bpmn:incoming>Flow_01</bpmn:incoming>
+      <bpmn:outgoing>Flow_D1</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_ReviewInfoAndConsent" name="Review Information &amp; Give Consent">
+      <bpmn:incoming>Flow_D1</bpmn:incoming>
+      <bpmn:outgoing>Flow_D2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_CompleteChecks" name="Complete Questionnaire &amp; Health Checks">
+      <bpmn:incoming>Flow_D2</bpmn:incoming>
+      <bpmn:outgoing>Flow_03</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_DonationDecision" name="Eligible?">
+      <bpmn:incoming>Flow_03</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDonation</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToDeferral</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_Donate" name="Donate Blood/Components">
+      <bpmn:incoming>Flow_ToDonation</bpmn:incoming>
+      <bpmn:outgoing>Flow_DonationToInstructions</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_ReceiveDeferralReason" name="Receive Deferral Explanation and Duration">
+      <bpmn:incoming>Flow_ToDeferral</bpmn:incoming>
+      <bpmn:outgoing>Flow_DeferralEnd_D</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_ReceiveInstructions" name="Receive Post-Donation Instructions">
+      <bpmn:incoming>Flow_DonationToInstructions</bpmn:incoming>
+      <bpmn:outgoing>Flow_07</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_VisitComplete" name="Donation Visit Ends">
+      <bpmn:incoming>Flow_07</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="Task_ReportPostDonation" name="Report Post-Donation Information">
+      <bpmn:incoming>Flow_ToReport</bpmn:incoming>
+      <bpmn:outgoing>Flow_PostDonation</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:startEvent id="StartEvent_PostDonation" name="Post-Donation Event Occurs">
+      <bpmn:outgoing>Flow_ToReport</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_PostDonation" signalRef="Signal_PostDonation" />
+    </bpmn:startEvent>
+    <bpmn:endEvent id="EndEvent_PDIReported" name="Information Reported">
+      <bpmn:incoming>Flow_PostDonation</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_01" sourceRef="StartEvent_WantsToDonate" targetRef="Task_Arrive" />
+    <bpmn:sequenceFlow id="Flow_D1" sourceRef="Task_Arrive" targetRef="Task_ReviewInfoAndConsent" />
+    <bpmn:sequenceFlow id="Flow_D2" sourceRef="Task_ReviewInfoAndConsent" targetRef="Task_CompleteChecks" />
+    <bpmn:sequenceFlow id="Flow_03" sourceRef="Task_CompleteChecks" targetRef="Gateway_DonationDecision" />
+    <bpmn:sequenceFlow id="Flow_ToDonation" name="Yes" sourceRef="Gateway_DonationDecision" targetRef="Task_Donate" />
+    <bpmn:sequenceFlow id="Flow_ToDeferral" name="No" sourceRef="Gateway_DonationDecision" targetRef="Task_ReceiveDeferralReason" />
+    <bpmn:sequenceFlow id="Flow_07" sourceRef="Task_ReceiveInstructions" targetRef="EndEvent_VisitComplete" />
+    <bpmn:sequenceFlow id="Flow_ToReport" sourceRef="StartEvent_PostDonation" targetRef="Task_ReportPostDonation" />
+    <bpmn:sequenceFlow id="Flow_PostDonation" sourceRef="Task_ReportPostDonation" targetRef="EndEvent_PDIReported" />
+    <bpmn:sequenceFlow id="Flow_DonationToInstructions" sourceRef="Task_Donate" targetRef="Task_ReceiveInstructions" />
+    <bpmn:endEvent id="EndEvent_Deferred" name="Visit Ends (Deferred)">
+      <bpmn:incoming>Flow_DeferralEnd_D</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_DeferralEnd_D" sourceRef="Task_ReceiveDeferralReason" targetRef="EndEvent_Deferred" />
+  </bpmn:process>
+  <bpmn:process id="Process_BloodEstablishment" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_DonorArrives" name="Donor Arrives">
+      <bpmn:outgoing>Flow_E1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_ProvideInfoAndObtainConsent" name="Provide Information &amp; Obtain Consent">
+      <bpmn:incoming>Flow_E1</bpmn:incoming>
+      <bpmn:outgoing>Flow_E2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_PerformScreening" name="Perform Pre-Donation Screening (Questionnaire, Hb Test)">
+      <bpmn:incoming>Flow_E2</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_MakeDecision" name="Review Assessment &amp; Make Eligibility Decision (Physician)">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_IsEligible" name="Is Donor Eligible?">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_Eligible</bpmn:outgoing>
+      <bpmn:outgoing>Flow_NotEligible</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_CollectDonation" name="Collect Blood/Component Donation">
+      <bpmn:incoming>Flow_Eligible</bpmn:incoming>
+      <bpmn:outgoing>Flow_CollectionToInstructions</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_ExplainDeferral" name="Explain Deferral and Duration">
+      <bpmn:incoming>Flow_NotEligible</bpmn:incoming>
+      <bpmn:outgoing>Flow_DeferralEnd_E</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_ProvideInstructions" name="Provide Post-Donation Instructions">
+      <bpmn:incoming>Flow_CollectionToInstructions</bpmn:incoming>
+      <bpmn:outgoing>Flow_17</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_DonorProcessed" name="Donor Processed">
+      <bpmn:incoming>Flow_17</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="StartEvent_PDIReceived" name="Post-Donation Info Received">
+      <bpmn:outgoing>Flow_21</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:startEvent>
+    <bpmn:task id="Task_EvaluatePDI" name="Evaluate PDI">
+      <bpmn:incoming>Flow_21</bpmn:incoming>
+      <bpmn:outgoing>Flow_22</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_ManageComponents" name="Trace &amp; Manage Affected Components">
+      <bpmn:incoming>Flow_22</bpmn:incoming>
+      <bpmn:outgoing>Flow_23</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_UpdateDonorStatus" name="Update Donor Status">
+      <bpmn:incoming>Flow_23</bpmn:incoming>
+      <bpmn:outgoing>Flow_24</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_PDIHandled" name="PDI Handled">
+      <bpmn:incoming>Flow_24</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_E1" sourceRef="StartEvent_DonorArrives" targetRef="Task_ProvideInfoAndObtainConsent" />
+    <bpmn:sequenceFlow id="Flow_E2" sourceRef="Task_ProvideInfoAndObtainConsent" targetRef="Task_PerformScreening" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_PerformScreening" targetRef="Task_MakeDecision" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_MakeDecision" targetRef="Gateway_IsEligible" />
+    <bpmn:sequenceFlow id="Flow_Eligible" name="Yes" sourceRef="Gateway_IsEligible" targetRef="Task_CollectDonation" />
+    <bpmn:sequenceFlow id="Flow_NotEligible" name="No" sourceRef="Gateway_IsEligible" targetRef="Task_ExplainDeferral" />
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="Task_ProvideInstructions" targetRef="EndEvent_DonorProcessed" />
+    <bpmn:sequenceFlow id="Flow_21" sourceRef="StartEvent_PDIReceived" targetRef="Task_EvaluatePDI" />
+    <bpmn:sequenceFlow id="Flow_22" sourceRef="Task_EvaluatePDI" targetRef="Task_ManageComponents" />
+    <bpmn:sequenceFlow id="Flow_23" sourceRef="Task_ManageComponents" targetRef="Task_UpdateDonorStatus" />
+    <bpmn:sequenceFlow id="Flow_24" sourceRef="Task_UpdateDonorStatus" targetRef="EndEvent_PDIHandled" />
+    <bpmn:sequenceFlow id="Flow_CollectionToInstructions" sourceRef="Task_CollectDonation" targetRef="Task_ProvideInstructions" />
+    <bpmn:endEvent id="EndEvent_DeferralProcessed" name="Deferral Processed">
+      <bpmn:incoming>Flow_DeferralEnd_E</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_DeferralEnd_E" sourceRef="Task_ExplainDeferral" targetRef="EndEvent_DeferralProcessed" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Shape_Participant_Donor" bpmnElement="Participant_Donor" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1350" height="380" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_WantsToDonate" bpmnElement="StartEvent_WantsToDonate">
+        <dc:Bounds x="222" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="202" y="205" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Arrive" bpmnElement="Task_Arrive">
+        <dc:Bounds x="340" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ReviewInfoAndConsent" bpmnElement="Task_ReviewInfoAndConsent">
+        <dc:Bounds x="500" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CompleteChecks" bpmnElement="Task_CompleteChecks">
+        <dc:Bounds x="660" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_DonationDecision" bpmnElement="Gateway_DonationDecision" isMarkerVisible="true">
+        <dc:Bounds x="815" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="818" y="125" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Donate" bpmnElement="Task_Donate">
+        <dc:Bounds x="1090" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ReceiveDeferralReason" bpmnElement="Task_ReceiveDeferralReason">
+        <dc:Bounds x="1090" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ReceiveInstructions" bpmnElement="Task_ReceiveInstructions">
+        <dc:Bounds x="1250" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_VisitComplete" bpmnElement="EndEvent_VisitComplete">
+        <dc:Bounds x="1412" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1387" y="205" width="87" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_PostDonation" bpmnElement="StartEvent_PostDonation">
+        <dc:Bounds x="222" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="197" y="345" width="86" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ReportPostDonation" bpmnElement="Task_ReportPostDonation">
+        <dc:Bounds x="340" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_PDIReported" bpmnElement="EndEvent_PDIReported">
+        <dc:Bounds x="502" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="475" y="345" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_Deferred" bpmnElement="EndEvent_Deferred">
+        <dc:Bounds x="1252" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1230" y="325" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_01" bpmnElement="Flow_01">
+        <di:waypoint x="258" y="180" />
+        <di:waypoint x="340" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_D1" bpmnElement="Flow_D1">
+        <di:waypoint x="440" y="180" />
+        <di:waypoint x="500" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_D2" bpmnElement="Flow_D2">
+        <di:waypoint x="600" y="180" />
+        <di:waypoint x="660" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_03" bpmnElement="Flow_03">
+        <di:waypoint x="760" y="180" />
+        <di:waypoint x="815" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToDonation" bpmnElement="Flow_ToDonation">
+        <di:waypoint x="865" y="180" />
+        <di:waypoint x="1090" y="180" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="970" y="162" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToDeferral" bpmnElement="Flow_ToDeferral">
+        <di:waypoint x="840" y="205" />
+        <di:waypoint x="840" y="300" />
+        <di:waypoint x="1090" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="958" y="278" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_07" bpmnElement="Flow_07">
+        <di:waypoint x="1350" y="180" />
+        <di:waypoint x="1412" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToReport" bpmnElement="Flow_ToReport">
+        <di:waypoint x="258" y="320" />
+        <di:waypoint x="340" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_PostDonation" bpmnElement="Flow_PostDonation">
+        <di:waypoint x="440" y="320" />
+        <di:waypoint x="502" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_DonationToInstructions" bpmnElement="Flow_DonationToInstructions">
+        <di:waypoint x="1190" y="180" />
+        <di:waypoint x="1250" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_DeferralEnd_D" bpmnElement="Flow_DeferralEnd_D">
+        <di:waypoint x="1190" y="300" />
+        <di:waypoint x="1252" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Participant_BloodEstablishment" bpmnElement="Participant_BloodEstablishment" isHorizontal="true">
+        <dc:Bounds x="160" y="500" width="1350" height="420" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_DonorArrives" bpmnElement="StartEvent_DonorArrives">
+        <dc:Bounds x="358" y="582" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="339" y="625" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ProvideInfoAndObtainConsent" bpmnElement="Task_ProvideInfoAndObtainConsent">
+        <dc:Bounds x="500" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_PerformScreening" bpmnElement="Task_PerformScreening">
+        <dc:Bounds x="660" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_MakeDecision" bpmnElement="Task_MakeDecision">
+        <dc:Bounds x="820" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_IsEligible" bpmnElement="Gateway_IsEligible" isMarkerVisible="true">
+        <dc:Bounds x="955" y="575" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="937" y="545" width="87" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CollectDonation" bpmnElement="Task_CollectDonation">
+        <dc:Bounds x="1090" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ExplainDeferral" bpmnElement="Task_ExplainDeferral">
+        <dc:Bounds x="1090" y="680" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ProvideInstructions" bpmnElement="Task_ProvideInstructions">
+        <dc:Bounds x="1250" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_DonorProcessed" bpmnElement="EndEvent_DonorProcessed">
+        <dc:Bounds x="1412" y="582" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1387" y="625" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_PDIReceived" bpmnElement="StartEvent_PDIReceived">
+        <dc:Bounds x="358" y="742" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="333" y="785" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_EvaluatePDI" bpmnElement="Task_EvaluatePDI">
+        <dc:Bounds x="500" y="720" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ManageComponents" bpmnElement="Task_ManageComponents">
+        <dc:Bounds x="660" y="720" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_UpdateDonorStatus" bpmnElement="Task_UpdateDonorStatus">
+        <dc:Bounds x="820" y="720" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_PDIHandled" bpmnElement="EndEvent_PDIHandled">
+        <dc:Bounds x="962" y="742" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="944" y="785" width="72" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_DeferralProcessed" bpmnElement="EndEvent_DeferralProcessed">
+        <dc:Bounds x="1252" y="702" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1228" y="745" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_E1" bpmnElement="Flow_E1">
+        <di:waypoint x="394" y="600" />
+        <di:waypoint x="500" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_E2" bpmnElement="Flow_E2">
+        <di:waypoint x="600" y="600" />
+        <di:waypoint x="660" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_12" bpmnElement="Flow_12">
+        <di:waypoint x="760" y="600" />
+        <di:waypoint x="820" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_13" bpmnElement="Flow_13">
+        <di:waypoint x="920" y="600" />
+        <di:waypoint x="955" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Eligible" bpmnElement="Flow_Eligible">
+        <di:waypoint x="1005" y="600" />
+        <di:waypoint x="1090" y="600" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1038" y="582" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_NotEligible" bpmnElement="Flow_NotEligible">
+        <di:waypoint x="980" y="625" />
+        <di:waypoint x="980" y="720" />
+        <di:waypoint x="1090" y="720" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1028" y="698" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_17" bpmnElement="Flow_17">
+        <di:waypoint x="1350" y="600" />
+        <di:waypoint x="1412" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_21" bpmnElement="Flow_21">
+        <di:waypoint x="394" y="760" />
+        <di:waypoint x="500" y="760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_22" bpmnElement="Flow_22">
+        <di:waypoint x="600" y="760" />
+        <di:waypoint x="660" y="760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_23" bpmnElement="Flow_23">
+        <di:waypoint x="760" y="760" />
+        <di:waypoint x="820" y="760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_24" bpmnElement="Flow_24">
+        <di:waypoint x="920" y="760" />
+        <di:waypoint x="962" y="760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CollectionToInstructions" bpmnElement="Flow_CollectionToInstructions">
+        <di:waypoint x="1190" y="600" />
+        <di:waypoint x="1250" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_DeferralEnd_E" bpmnElement="Flow_DeferralEnd_E">
+        <di:waypoint x="1190" y="720" />
+        <di:waypoint x="1252" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_Arrival" bpmnElement="MessageFlow_Arrival">
+        <di:waypoint x="376" y="220" />
+        <di:waypoint x="376" y="582" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_ConsentInfo" bpmnElement="MessageFlow_ConsentInfo">
+        <di:waypoint x="550" y="560" />
+        <di:waypoint x="550" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_AssessmentInfo" bpmnElement="MessageFlow_AssessmentInfo">
+        <di:waypoint x="710" y="560" />
+        <di:waypoint x="710" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_Decision" bpmnElement="MessageFlow_Decision">
+        <di:waypoint x="980" y="575" />
+        <di:waypoint x="980" y="380" />
+        <di:waypoint x="840" y="380" />
+        <di:waypoint x="840" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_DeferralExplanation" bpmnElement="MessageFlow_DeferralExplanation">
+        <di:waypoint x="1140" y="680" />
+        <di:waypoint x="1140" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_Donation" bpmnElement="MessageFlow_Donation">
+        <di:waypoint x="1140" y="560" />
+        <di:waypoint x="1140" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_PostDonationInfo" bpmnElement="MessageFlow_PostDonationInfo">
+        <di:waypoint x="376" y="360" />
+        <di:waypoint x="376" y="742" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_Instructions" bpmnElement="MessageFlow_Instructions">
+        <di:waypoint x="1300" y="560" />
+        <di:waypoint x="1300" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

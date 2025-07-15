@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://www.signavio.com" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd">
+   <collaboration id="sid-collaboration-1">
+      <participant id="sid-processor-pool" name="Processor" processRef="sid-processor-process"/>
+      <participant id="sid-controller-pool" name="Controller" processRef="sid-controller-process"/>
+      <participant id="sid-authority-pool" name="Supervisory Authority" processRef="sid-authority-process"/>
+      <participant id="sid-datasubject-pool" name="Data Subject" processRef="sid-datasubject-process"/>
+      <messageFlow id="sid-mf-proc-contr" name="Breach Notification" sourceRef="sid-proc-notify-controller" targetRef="sid-contr-breach-aware"/>
+      <messageFlow id="sid-mf-contr-auth" name="Breach Notification" sourceRef="sid-contr-notify-authority" targetRef="sid-auth-receive-notification"/>
+      <messageFlow id="sid-mf-contr-ds" name="Breach Communication" sourceRef="sid-contr-comm-ds" targetRef="sid-ds-receive-communication"/>
+      <messageFlow id="sid-mf-auth-contr" name="Requirement to communicate" sourceRef="sid-auth-require-comm" targetRef="sid-contr-comm-ds"/>
+   </collaboration>
+   <process id="sid-processor-process" isExecutable="false">
+      <startEvent id="sid-proc-start" name="Personal data breach occurs"/>
+      <task id="sid-proc-notify-controller" name="Notify controller without undue delay">
+         <incoming>sid-seq-proc-1</incoming>
+         <outgoing>sid-seq-proc-2</outgoing>
+      </task>
+      <endEvent id="sid-proc-end">
+         <incoming>sid-seq-proc-2</incoming>
+      </endEvent>
+      <sequenceFlow id="sid-seq-proc-1" sourceRef="sid-proc-start" targetRef="sid-proc-notify-controller"/>
+      <sequenceFlow id="sid-seq-proc-2" sourceRef="sid-proc-notify-controller" targetRef="sid-proc-end"/>
+   </process>
+   <process id="sid-controller-process" isExecutable="false">
+      <startEvent id="sid-contr-breach-aware" name="Become aware of a personal data breach">
+         <outgoing>sid-seq-contr-1</outgoing>
+         <messageEventDefinition/>
+      </startEvent>
+      <task id="sid-contr-doc-breach" name="Document personal data breach">
+         <incoming>sid-seq-contr-1</incoming>
+         <outgoing>sid-seq-contr-2</outgoing>
+      </task>
+      <exclusiveGateway id="sid-contr-gw-risk" name="Likely to result in a risk?">
+         <incoming>sid-seq-contr-2</incoming>
+         <outgoing>sid-seq-contr-risk-no</outgoing>
+         <outgoing>sid-seq-contr-risk-yes</outgoing>
+      </exclusiveGateway>
+      <task id="sid-contr-notify-authority" name="Notify supervisory authority">
+         <incoming>sid-seq-contr-risk-yes</incoming>
+         <outgoing>sid-seq-contr-3</outgoing>
+      </task>
+      <exclusiveGateway id="sid-contr-gw-high-risk" name="Likely to result in a high risk?">
+         <incoming>sid-seq-contr-3</incoming>
+         <outgoing>sid-seq-contr-high-risk-no</outgoing>
+         <outgoing>sid-seq-contr-high-risk-yes</outgoing>
+      </exclusiveGateway>
+      <exclusiveGateway id="sid-contr-gw-exception" name="Exception conditions met?">
+         <incoming>sid-seq-contr-high-risk-yes</incoming>
+         <outgoing>sid-seq-contr-exception-no</outgoing>
+         <outgoing>sid-seq-contr-exception-yes</outgoing>
+      </exclusiveGateway>
+      <task id="sid-contr-comm-ds" name="Communicate personal data breach to the data subject">
+         <incoming>sid-seq-contr-exception-no</incoming>
+         <outgoing>sid-seq-contr-4</outgoing>
+      </task>
+      <exclusiveGateway id="sid-contr-gw-disproportionate" name="Disproportionate effort?">
+          <incoming>sid-seq-contr-exception-yes</incoming>
+          <outgoing>sid-seq-contr-disprop-yes</outgoing>
+          <outgoing>sid-seq-contr-disprop-no</outgoing>
+      </exclusiveGateway>
+      <task id="sid-contr-public-comm" name="Make public communication">
+          <incoming>sid-seq-contr-disprop-yes</incoming>
+          <outgoing>sid-seq-contr-5</outgoing>
+      </task>
+      <endEvent id="sid-contr-end1">
+         <incoming>sid-seq-contr-risk-no</incoming>
+      </endEvent>
+      <endEvent id="sid-contr-end2">
+         <incoming>sid-seq-contr-high-risk-no</incoming>
+      </endEvent>
+      <endEvent id="sid-contr-end3">
+         <incoming>sid-seq-contr-4</incoming>
+      </endEvent>
+      <endEvent id="sid-contr-end4">
+         <incoming>sid-seq-contr-disprop-no</incoming>
+      </endEvent>
+       <endEvent id="sid-contr-end5">
+         <incoming>sid-seq-contr-5</incoming>
+      </endEvent>
+      <sequenceFlow id="sid-seq-contr-1" sourceRef="sid-contr-breach-aware" targetRef="sid-contr-doc-breach"/>
+      <sequenceFlow id="sid-seq-contr-2" sourceRef="sid-contr-doc-breach" targetRef="sid-contr-gw-risk"/>
+      <sequenceFlow id="sid-seq-contr-risk-no" name="No" sourceRef="sid-contr-gw-risk" targetRef="sid-contr-end1"/>
+      <sequenceFlow id="sid-seq-contr-risk-yes" name="Yes" sourceRef="sid-contr-gw-risk" targetRef="sid-contr-notify-authority"/>
+      <sequenceFlow id="sid-seq-contr-3" sourceRef="sid-contr-notify-authority" targetRef="sid-contr-gw-high-risk"/>
+      <sequenceFlow id="sid-seq-contr-high-risk-no" name="No" sourceRef="sid-contr-gw-high-risk" targetRef="sid-contr-end2"/>
+      <sequenceFlow id="sid-seq-contr-high-risk-yes" name="Yes" sourceRef="sid-contr-gw-high-risk" targetRef="sid-contr-gw-exception"/>
+      <sequenceFlow id="sid-seq-contr-exception-no" name="No" sourceRef="sid-contr-gw-exception" targetRef="sid-contr-comm-ds"/>
+      <sequenceFlow id="sid-seq-contr-exception-yes" name="Yes" sourceRef="sid-contr-gw-exception" targetRef="sid-contr-gw-disproportionate"/>
+      <sequenceFlow id="sid-seq-contr-disprop-yes" name="Yes" sourceRef="sid-contr-gw-disproportionate" targetRef="sid-contr-public-comm" />
+      <sequenceFlow id="sid-seq-contr-disprop-no" name="No" sourceRef="sid-contr-gw-disproportionate" targetRef="sid-contr-end4" />
+      <sequenceFlow id="sid-seq-contr-4" sourceRef="sid-contr-comm-ds" targetRef="sid-contr-end3"/>
+      <sequenceFlow id="sid-seq-contr-5" sourceRef="sid-contr-public-comm" targetRef="sid-contr-end5"/>
+   </process>
+   <process id="sid-authority-process" isExecutable="false">
+      <startEvent id="sid-auth-receive-notification" name="Receive notification">
+         <outgoing>sid-seq-auth-1</outgoing>
+         <messageEventDefinition/>
+      </startEvent>
+      <task id="sid-auth-verify" name="Verify compliance">
+         <incoming>sid-seq-auth-1</incoming>
+         <outgoing>sid-seq-auth-2</outgoing>
+      </task>
+       <exclusiveGateway id="sid-auth-gw-intervention" name="Controller failed to communicate?">
+           <incoming>sid-seq-auth-2</incoming>
+           <outgoing>sid-seq-auth-int-no</outgoing>
+           <outgoing>sid-seq-auth-int-yes</outgoing>
+       </exclusiveGateway>
+      <task id="sid-auth-require-comm" name="Require controller to communicate">
+          <incoming>sid-seq-auth-int-yes</incoming>
+          <outgoing>sid-seq-auth-3</outgoing>
+      </task>
+      <endEvent id="sid-auth-end1">
+         <incoming>sid-seq-auth-int-no</incoming>
+      </endEvent>
+      <endEvent id="sid-auth-end2">
+         <incoming>sid-seq-auth-3</incoming>
+      </endEvent>
+      <sequenceFlow id="sid-seq-auth-1" sourceRef="sid-auth-receive-notification" targetRef="sid-auth-verify"/>
+       <sequenceFlow id="sid-seq-auth-2" sourceRef="sid-auth-verify" targetRef="sid-auth-gw-intervention"/>
+       <sequenceFlow id="sid-seq-auth-int-no" name="No" sourceRef="sid-auth-gw-intervention" targetRef="sid-auth-end1"/>
+       <sequenceFlow id="sid-seq-auth-int-yes" name="Yes" sourceRef="sid-auth-gw-intervention" targetRef="sid-auth-require-comm"/>
+      <sequenceFlow id="sid-seq-auth-3" sourceRef="sid-auth-require-comm" targetRef="sid-auth-end2"/>
+   </process>
+   <process id="sid-datasubject-process" isExecutable="false">
+      <startEvent id="sid-ds-receive-communication" name="Receive communication">
+         <outgoing>sid-seq-ds-1</outgoing>
+         <messageEventDefinition/>
+      </startEvent>
+      <endEvent id="sid-ds-end">
+         <incoming>sid-seq-ds-1</incoming>
+      </endEvent>
+      <sequenceFlow id="sid-seq-ds-1" sourceRef="sid-ds-receive-communication" targetRef="sid-ds-end"/>
+   </process>
+   <bpmndi:BPMNDiagram id="sid-diagram-1">
+      <bpmndi:BPMNPlane id="sid-plane-1" bpmnElement="sid-collaboration-1">
+         <bpmndi:BPMNShape id="sid-processor-pool-shape" bpmnElement="sid-processor-pool" isHorizontal="true">
+            <omgdc:Bounds x="100" y="50" width="1300" height="150"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-proc-start-shape" bpmnElement="sid-proc-start">
+            <omgdc:Bounds x="150" y="105" width="30" height="30"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-proc-notify-controller-shape" bpmnElement="sid-proc-notify-controller">
+            <omgdc:Bounds x="230" y="80" width="180" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-proc-end-shape" bpmnElement="sid-proc-end">
+            <omgdc:Bounds x="460" y="106" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="sid-seq-proc-1-edge" bpmnElement="sid-seq-proc-1">
+            <omgdi:waypoint x="180" y="120"/>
+            <omgdi:waypoint x="230" y="120"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-proc-2-edge" bpmnElement="sid-seq-proc-2">
+            <omgdi:waypoint x="410" y="120"/>
+            <omgdi:waypoint x="460" y="120"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape id="sid-controller-pool-shape" bpmnElement="sid-controller-pool" isHorizontal="true">
+            <omgdc:Bounds x="100" y="220" width="1300" height="250"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-breach-aware-shape" bpmnElement="sid-contr-breach-aware">
+            <omgdc:Bounds x="150" y="325" width="30" height="30"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-doc-breach-shape" bpmnElement="sid-contr-doc-breach">
+            <omgdc:Bounds x="210" y="300" width="140" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-gw-risk-shape" bpmnElement="sid-contr-gw-risk" isMarkerVisible="true">
+            <omgdc:Bounds x="380" y="320" width="40" height="40"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-notify-authority-shape" bpmnElement="sid-contr-notify-authority">
+            <omgdc:Bounds x="450" y="300" width="140" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-gw-high-risk-shape" bpmnElement="sid-contr-gw-high-risk" isMarkerVisible="true">
+            <omgdc:Bounds x="620" y="320" width="40" height="40"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-gw-exception-shape" bpmnElement="sid-contr-gw-exception" isMarkerVisible="true">
+            <omgdc:Bounds x="690" y="320" width="40" height="40"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-comm-ds-shape" bpmnElement="sid-contr-comm-ds">
+            <omgdc:Bounds x="760" y="300" width="160" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-gw-disproportionate-shape" bpmnElement="sid-contr-gw-disproportionate" isMarkerVisible="true">
+            <omgdc:Bounds x="760" y="400" width="40" height="40"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-public-comm-shape" bpmnElement="sid-contr-public-comm">
+            <omgdc:Bounds x="830" y="380" width="140" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-end1-shape" bpmnElement="sid-contr-end1">
+            <omgdc:Bounds x="450" y="240" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-end2-shape" bpmnElement="sid-contr-end2">
+            <omgdc:Bounds x="690" y="240" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-end3-shape" bpmnElement="sid-contr-end3">
+            <omgdc:Bounds x="950" y="326" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-contr-end4-shape" bpmnElement="sid-contr-end4">
+            <omgdc:Bounds x="830" y="460" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="sid-contr-end5-shape" bpmnElement="sid-contr-end5">
+            <omgdc:Bounds x="1000" y="406" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="sid-seq-contr-1-edge" bpmnElement="sid-seq-contr-1">
+            <omgdi:waypoint x="180" y="340"/>
+            <omgdi:waypoint x="210" y="340"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-2-edge" bpmnElement="sid-seq-contr-2">
+            <omgdi:waypoint x="350" y="340"/>
+            <omgdi:waypoint x="380" y="340"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-risk-no-edge" bpmnElement="sid-seq-contr-risk-no">
+            <omgdi:waypoint x="400" y="320"/>
+            <omgdi:waypoint x="400" y="254"/>
+             <omgdi:waypoint x="450" y="254"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-risk-yes-edge" bpmnElement="sid-seq-contr-risk-yes">
+            <omgdi:waypoint x="420" y="340"/>
+            <omgdi:waypoint x="450" y="340"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-3-edge" bpmnElement="sid-seq-contr-3">
+            <omgdi:waypoint x="590" y="340"/>
+            <omgdi:waypoint x="620" y="340"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-high-risk-no-edge" bpmnElement="sid-seq-contr-high-risk-no">
+            <omgdi:waypoint x="640" y="320"/>
+            <omgdi:waypoint x="640" y="254"/>
+            <omgdi:waypoint x="690" y="254"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-high-risk-yes-edge" bpmnElement="sid-seq-contr-high-risk-yes">
+            <omgdi:waypoint x="660" y="340"/>
+            <omgdi:waypoint x="690" y="340"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-exception-no-edge" bpmnElement="sid-seq-contr-exception-no">
+            <omgdi:waypoint x="730" y="340"/>
+            <omgdi:waypoint x="760" y="340"/>
+         </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="sid-seq-contr-exception-yes-edge" bpmnElement="sid-seq-contr-exception-yes">
+            <omgdi:waypoint x="710" y="360"/>
+             <omgdi:waypoint x="710" y="420"/>
+            <omgdi:waypoint x="760" y="420"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-disprop-yes-edge" bpmnElement="sid-seq-contr-disprop-yes">
+             <omgdi:waypoint x="800" y="420"/>
+             <omgdi:waypoint x="830" y="420"/>
+         </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="sid-seq-contr-disprop-no-edge" bpmnElement="sid-seq-contr-disprop-no">
+             <omgdi:waypoint x="780" y="440"/>
+              <omgdi:waypoint x="780" y="474"/>
+             <omgdi:waypoint x="830" y="474"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-4-edge" bpmnElement="sid-seq-contr-4">
+            <omgdi:waypoint x="920" y="340"/>
+            <omgdi:waypoint x="950" y="340"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-contr-5-edge" bpmnElement="sid-seq-contr-5">
+            <omgdi:waypoint x="970" y="420"/>
+            <omgdi:waypoint x="1000" y="420"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape id="sid-authority-pool-shape" bpmnElement="sid-authority-pool" isHorizontal="true">
+            <omgdc:Bounds x="100" y="490" width="1300" height="150"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-auth-receive-notification-shape" bpmnElement="sid-auth-receive-notification">
+            <omgdc:Bounds x="505" y="545" width="30" height="30"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-auth-verify-shape" bpmnElement="sid-auth-verify">
+            <omgdc:Bounds x="580" y="520" width="120" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-auth-gw-intervention-shape" bpmnElement="sid-auth-gw-intervention" isMarkerVisible="true">
+            <omgdc:Bounds x="730" y="540" width="40" height="40"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-auth-require-comm-shape" bpmnElement="sid-auth-require-comm">
+             <omgdc:Bounds x="800" y="520" width="160" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-auth-end1-shape" bpmnElement="sid-auth-end1">
+            <omgdc:Bounds x="800" y="600" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-auth-end2-shape" bpmnElement="sid-auth-end2">
+            <omgdc:Bounds x="990" y="546" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="sid-seq-auth-1-edge" bpmnElement="sid-seq-auth-1">
+            <omgdi:waypoint x="535" y="560"/>
+            <omgdi:waypoint x="580" y="560"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-auth-2-edge" bpmnElement="sid-seq-auth-2">
+            <omgdi:waypoint x="700" y="560"/>
+            <omgdi:waypoint x="730" y="560"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-auth-int-no-edge" bpmnElement="sid-seq-auth-int-no">
+            <omgdi:waypoint x="750" y="580"/>
+            <omgdi:waypoint x="750" y="614"/>
+            <omgdi:waypoint x="800" y="614"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-auth-int-yes-edge" bpmnElement="sid-seq-auth-int-yes">
+            <omgdi:waypoint x="770" y="560"/>
+            <omgdi:waypoint x="800" y="560"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-seq-auth-3-edge" bpmnElement="sid-seq-auth-3">
+            <omgdi:waypoint x="960" y="560"/>
+            <omgdi:waypoint x="990" y="560"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape id="sid-datasubject-pool-shape" bpmnElement="sid-datasubject-pool" isHorizontal="true">
+            <omgdc:Bounds x="100" y="660" width="1300" height="150"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-ds-receive-communication-shape" bpmnElement="sid-ds-receive-communication">
+            <omgdc:Bounds x="825" y="715" width="30" height="30"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-ds-end-shape" bpmnElement="sid-ds-end">
+            <omgdc:Bounds x="900" y="716" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="sid-seq-ds-1-edge" bpmnElement="sid-seq-ds-1">
+            <omgdi:waypoint x="855" y="730"/>
+            <omgdi:waypoint x="900" y="730"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-mf-proc-contr-edge" bpmnElement="sid-mf-proc-contr">
+            <omgdi:waypoint x="320" y="160"/>
+            <omgdi:waypoint x="320" y="220"/>
+            <omgdi:waypoint x="165" y="220"/>
+            <omgdi:waypoint x="165" y="325"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-mf-contr-auth-edge" bpmnElement="sid-mf-contr-auth">
+            <omgdi:waypoint x="520" y="380"/>
+            <omgdi:waypoint x="520" y="545"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-mf-contr-ds-edge" bpmnElement="sid-mf-contr-ds">
+            <omgdi:waypoint x="840" y="380"/>
+            <omgdi:waypoint x="840" y="715"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-mf-auth-contr-edge" bpmnElement="sid-mf-auth-contr">
+             <omgdi:waypoint x="880" y="520"/>
+             <omgdi:waypoint x="880" y="470"/>
+             <omgdi:waypoint x="840" y="470"/>
+             <omgdi:waypoint x="840" y="380"/>
+         </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+   </bpmndi:BPMNDiagram>
+</definitions>

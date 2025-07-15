@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://www.signavio.com" exporter="Gemini AI" exporterVersion="1.0">
+   <collaboration id="collab_donor_selection">
+      <participant id="participant_blood_establishment" name="Blood Establishment" processRef="process_blood_establishment" />
+      <participant id="participant_donor" name="Donor" processRef="process_donor" />
+      <messageFlow id="msg_flow_donor_to_be" sourceRef="task_donor_attend" targetRef="startevent_be_receive_donor" />
+   </collaboration>
+   <process id="process_blood_establishment" isClosed="false" isExecutable="false" name="Blood Establishment Process">
+      <laneSet id="laneset_be">
+         <lane id="lane_be" name="Blood Establishment">
+            <flowNodeRef>startevent_be_receive_donor</flowNodeRef>
+            <flowNodeRef>task_be_medical_assessment</flowNodeRef>
+            <flowNodeRef>task_be_assess_eligibility</flowNodeRef>
+            <flowNodeRef>gateway_be_eligible</flowNodeRef>
+            <flowNodeRef>task_be_collect_donation</flowNodeRef>
+            <flowNodeRef>task_be_defer_donor</flowNodeRef>
+            <flowNodeRef>endevent_be_complete</flowNodeRef>
+            <flowNodeRef>endevent_be_deferred</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="startevent_be_receive_donor" name="Receive Donor for Assessment">
+         <outgoing>seq_flow_be_1</outgoing>
+         <messageEventDefinition />
+      </startEvent>
+      <task id="task_be_medical_assessment" name="Perform medical assessment">
+         <incoming>seq_flow_be_1</incoming>
+         <outgoing>seq_flow_be_2</outgoing>
+      </task>
+      <task id="task_be_assess_eligibility" name="Assess donor eligibility">
+         <incoming>seq_flow_be_2</incoming>
+         <outgoing>seq_flow_be_3</outgoing>
+      </task>
+      <exclusiveGateway id="gateway_be_eligible" name="Eligible?">
+         <incoming>seq_flow_be_3</incoming>
+         <outgoing>seq_flow_be_4_yes</outgoing>
+         <outgoing>seq_flow_be_5_no</outgoing>
+      </exclusiveGateway>
+      <task id="task_be_collect_donation" name="Collect Donation">
+         <incoming>seq_flow_be_4_yes</incoming>
+         <outgoing>seq_flow_be_6</outgoing>
+      </task>
+      <task id="task_be_defer_donor" name="Defer Donor">
+         <incoming>seq_flow_be_5_no</incoming>
+         <outgoing>seq_flow_be_7</outgoing>
+      </task>
+      <endEvent id="endevent_be_complete" name="Donation Complete">
+         <incoming>seq_flow_be_6</incoming>
+      </endEvent>
+      <endEvent id="endevent_be_deferred" name="Donor Deferred">
+         <incoming>seq_flow_be_7</incoming>
+      </endEvent>
+      <sequenceFlow id="seq_flow_be_1" sourceRef="startevent_be_receive_donor" targetRef="task_be_medical_assessment" />
+      <sequenceFlow id="seq_flow_be_2" sourceRef="task_be_medical_assessment" targetRef="task_be_assess_eligibility" />
+      <sequenceFlow id="seq_flow_be_3" sourceRef="task_be_assess_eligibility" targetRef="gateway_be_eligible" />
+      <sequenceFlow id="seq_flow_be_4_yes" name="Yes" sourceRef="gateway_be_eligible" targetRef="task_be_collect_donation" />
+      <sequenceFlow id="seq_flow_be_5_no" name="No" sourceRef="gateway_be_eligible" targetRef="task_be_defer_donor" />
+      <sequenceFlow id="seq_flow_be_6" sourceRef="task_be_collect_donation" targetRef="endevent_be_complete" />
+      <sequenceFlow id="seq_flow_be_7" sourceRef="task_be_defer_donor" targetRef="endevent_be_deferred" />
+   </process>
+   <process id="process_donor" isClosed="false" isExecutable="false" name="Donor Process">
+      <laneSet id="laneset_donor">
+         <lane id="lane_donor" name="Donor">
+            <flowNodeRef>startevent_donor_start</flowNodeRef>
+            <flowNodeRef>task_donor_attend</flowNodeRef>
+            <flowNodeRef>endevent_donor_end</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="startevent_donor_start" name="Start">
+         <outgoing>seq_flow_donor_1</outgoing>
+      </startEvent>
+      <task id="task_donor_attend" name="Attend for assessment and donation">
+         <incoming>seq_flow_donor_1</incoming>
+         <outgoing>seq_flow_donor_2</outgoing>
+      </task>
+      <endEvent id="endevent_donor_end" name="End">
+         <incoming>seq_flow_donor_2</incoming>
+      </endEvent>
+      <sequenceFlow id="seq_flow_donor_1" sourceRef="startevent_donor_start" targetRef="task_donor_attend" />
+      <sequenceFlow id="seq_flow_donor_2" sourceRef="task_donor_attend" targetRef="endevent_donor_end" />
+   </process>
+   <bpmndi:BPMNDiagram id="BPMNDiagram_donor_selection">
+      <bpmndi:BPMNPlane id="BPMNPlane_donor_selection" bpmnElement="collab_donor_selection">
+         <bpmndi:BPMNShape id="shape_participant_be" bpmnElement="participant_blood_establishment" isHorizontal="true">
+            <omgdc:Bounds x="160" y="80" width="850" height="250" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_participant_donor" bpmnElement="participant_donor" isHorizontal="true">
+            <omgdc:Bounds x="160" y="400" width="450" height="150" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_lane_be" bpmnElement="lane_be" isHorizontal="true">
+            <omgdc:Bounds x="190" y="80" width="820" height="250" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_lane_donor" bpmnElement="lane_donor" isHorizontal="true">
+            <omgdc:Bounds x="190" y="400" width="420" height="150" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_startevent_be" bpmnElement="startevent_be_receive_donor">
+            <omgdc:Bounds x="240" y="188" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="215" y="231" width="87" height="27" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_be_assessment" bpmnElement="task_be_medical_assessment">
+            <omgdc:Bounds x="320" y="166" width="100" height="80" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_be_eligibility" bpmnElement="task_be_assess_eligibility">
+            <omgdc:Bounds x="460" y="166" width="100" height="80" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gateway_be" bpmnElement="gateway_be_eligible" isMarkerVisible="true">
+            <omgdc:Bounds x="600" y="181" width="50" height="50" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="605" y="151" width="40" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_be_collect" bpmnElement="task_be_collect_donation">
+            <omgdc:Bounds x="690" y="100" width="100" height="80" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_be_defer" bpmnElement="task_be_defer_donor">
+            <omgdc:Bounds x="690" y="230" width="100" height="80" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_endevent_be_complete" bpmnElement="endevent_be_complete">
+            <omgdc:Bounds x="842" y="122" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="821" y="165" width="78" height="27" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_endevent_be_deferred" bpmnElement="endevent_be_deferred">
+            <omgdc:Bounds x="842" y="252" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="822" y="295" width="77" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_startevent_donor" bpmnElement="startevent_donor_start">
+            <omgdc:Bounds x="242" y="457" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="245" y="500" width="30" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_donor_attend" bpmnElement="task_donor_attend">
+            <omgdc:Bounds x="320" y="435" width="100" height="80" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_endevent_donor" bpmnElement="endevent_donor_end">
+            <omgdc:Bounds x="482" y="457" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="487" y="500" width="22" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge_msg_flow" bpmnElement="msg_flow_donor_to_be">
+            <omgdi:waypoint x="370" y="435" />
+            <omgdi:waypoint x="370" y="330" />
+            <omgdi:waypoint x="258" y="330" />
+            <omgdi:waypoint x="258" y="224" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_be_1" bpmnElement="seq_flow_be_1">
+            <omgdi:waypoint x="276" y="206" />
+            <omgdi:waypoint x="320" y="206" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_be_2" bpmnElement="seq_flow_be_2">
+            <omgdi:waypoint x="420" y="206" />
+            <omgdi:waypoint x="460" y="206" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_be_3" bpmnElement="seq_flow_be_3">
+            <omgdi:waypoint x="560" y="206" />
+            <omgdi:waypoint x="600" y="206" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_be_4_yes" bpmnElement="seq_flow_be_4_yes">
+            <omgdi:waypoint x="625" y="181" />
+            <omgdi:waypoint x="625" y="140" />
+            <omgdi:waypoint x="690" y="140" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_be_5_no" bpmnElement="seq_flow_be_5_no">
+            <omgdi:waypoint x="625" y="231" />
+            <omgdi:waypoint x="625" y="270" />
+            <omgdi:waypoint x="690" y="270" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_be_6" bpmnElement="seq_flow_be_6">
+            <omgdi:waypoint x="790" y="140" />
+            <omgdi:waypoint x="842" y="140" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_be_7" bpmnElement="seq_flow_be_7">
+            <omgdi:waypoint x="790" y="270" />
+            <omgdi:waypoint x="842" y="270" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_donor_1" bpmnElement="seq_flow_donor_1">
+            <omgdi:waypoint x="278" y="475" />
+            <omgdi:waypoint x="320" y="475" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_donor_2" bpmnElement="seq_flow_donor_2">
+            <omgdi:waypoint x="420" y="475" />
+            <omgdi:waypoint x="482" y="475" />
+         </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+   </bpmndi:BPMNDiagram>
+</definitions>

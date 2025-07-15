@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:signavio="http://www.signavio.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" exporter="Gemini 2.5 Pro" id="sid-1" targetNamespace="http://www.signavio.com" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd">
+   <collaboration id="sid-collab-1">
+      <participant id="sid-pool-obliged-entity" name="Obliged Entity" processRef="sid-process-obliged-entity">
+      </participant>
+      <participant id="sid-pool-customer" name="Customer" processRef="sid-process-customer">
+      </participant>
+      <participant id="sid-pool-fiu" name="FIU" processRef="sid-process-fiu">
+      </participant>
+      <messageFlow id="sid-msg-customer-to-entity" sourceRef="sid-task-request-relationship" targetRef="sid-start-receive-request"/>
+      <messageFlow id="sid-msg-entity-to-fiu" sourceRef="sid-task-make-str" targetRef="sid-start-receive-str"/>
+   </collaboration>
+   <process id="sid-process-obliged-entity" isExecutable="false">
+      <laneSet>
+         <lane id="sid-lane-obliged-entity">
+            <flowNodeRef>sid-start-receive-request</flowNodeRef>
+            <flowNodeRef>sid-task-verify-identity</flowNodeRef>
+            <flowNodeRef>sid-gateway-compliance-check</flowNodeRef>
+            <flowNodeRef>sid-task-establish-relationship</flowNodeRef>
+            <flowNodeRef>sid-end-process-ok</flowNodeRef>
+            <flowNodeRef>sid-task-terminate-relationship</flowNodeRef>
+            <flowNodeRef>sid-task-make-str</flowNodeRef>
+            <flowNodeRef>sid-end-process-terminated</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="sid-start-receive-request" name="Business Request Received">
+         <outgoing>sid-flow-1</outgoing>
+         <messageEventDefinition/>
+      </startEvent>
+      <task id="sid-task-verify-identity" name="Verify identity of the customer and beneficial owner">
+         <incoming>sid-flow-1</incoming>
+         <outgoing>sid-flow-2</outgoing>
+      </task>
+      <exclusiveGateway id="sid-gateway-compliance-check" name="Able to comply with CDD requirements?">
+         <incoming>sid-flow-2</incoming>
+         <outgoing>sid-flow-compliance-yes</outgoing>
+         <outgoing>sid-flow-compliance-no</outgoing>
+      </exclusiveGateway>
+      <task id="sid-task-establish-relationship" name="Establish business relationship / carry out transaction">
+         <incoming>sid-flow-compliance-yes</incoming>
+         <outgoing>sid-flow-3</outgoing>
+      </task>
+      <endEvent id="sid-end-process-ok" name="Process Complete">
+         <incoming>sid-flow-3</incoming>
+      </endEvent>
+      <task id="sid-task-terminate-relationship" name="Terminate the business relationship">
+         <incoming>sid-flow-compliance-no</incoming>
+         <outgoing>sid-flow-4</outgoing>
+      </task>
+      <sendTask id="sid-task-make-str" name="Make a suspicious transaction report to the FIU">
+         <incoming>sid-flow-4</incoming>
+         <outgoing>sid-flow-5</outgoing>
+      </sendTask>
+      <endEvent id="sid-end-process-terminated" name="Process Terminated">
+         <incoming>sid-flow-5</incoming>
+      </endEvent>
+      <sequenceFlow id="sid-flow-1" sourceRef="sid-start-receive-request" targetRef="sid-task-verify-identity"/>
+      <sequenceFlow id="sid-flow-2" sourceRef="sid-task-verify-identity" targetRef="sid-gateway-compliance-check"/>
+      <sequenceFlow id="sid-flow-compliance-yes" name="Yes" sourceRef="sid-gateway-compliance-check" targetRef="sid-task-establish-relationship"/>
+      <sequenceFlow id="sid-flow-3" sourceRef="sid-task-establish-relationship" targetRef="sid-end-process-ok"/>
+      <sequenceFlow id="sid-flow-compliance-no" name="No" sourceRef="sid-gateway-compliance-check" targetRef="sid-task-terminate-relationship"/>
+      <sequenceFlow id="sid-flow-4" sourceRef="sid-task-terminate-relationship" targetRef="sid-task-make-str"/>
+      <sequenceFlow id="sid-flow-5" sourceRef="sid-task-make-str" targetRef="sid-end-process-terminated"/>
+   </process>
+   <process id="sid-process-customer" isExecutable="false">
+      <laneSet>
+         <lane id="sid-lane-customer">
+            <flowNodeRef>sid-start-customer</flowNodeRef>
+            <flowNodeRef>sid-task-request-relationship</flowNodeRef>
+            <flowNodeRef>sid-end-customer</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="sid-start-customer" name="Start">
+         <outgoing>sid-flow-cust-1</outgoing>
+      </startEvent>
+      <sendTask id="sid-task-request-relationship" name="Request business relationship or transaction">
+         <incoming>sid-flow-cust-1</incoming>
+         <outgoing>sid-flow-cust-2</outgoing>
+      </sendTask>
+      <endEvent id="sid-end-customer" name="End">
+         <incoming>sid-flow-cust-2</incoming>
+      </endEvent>
+      <sequenceFlow id="sid-flow-cust-1" sourceRef="sid-start-customer" targetRef="sid-task-request-relationship"/>
+      <sequenceFlow id="sid-flow-cust-2" sourceRef="sid-task-request-relationship" targetRef="sid-end-customer"/>
+   </process>
+   <process id="sid-process-fiu" isExecutable="false">
+      <laneSet>
+         <lane id="sid-lane-fiu">
+            <flowNodeRef>sid-start-receive-str</flowNodeRef>
+            <flowNodeRef>sid-task-process-str</flowNodeRef>
+            <flowNodeRef>sid-end-fiu</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="sid-start-receive-str" name="Suspicious Transaction Report Received">
+         <outgoing>sid-flow-fiu-1</outgoing>
+         <messageEventDefinition/>
+      </startEvent>
+      <task id="sid-task-process-str" name="Process report">
+         <incoming>sid-flow-fiu-1</incoming>
+         <outgoing>sid-flow-fiu-2</outgoing>
+      </task>
+      <endEvent id="sid-end-fiu" name="End">
+         <incoming>sid-flow-fiu-2</incoming>
+      </endEvent>
+      <sequenceFlow id="sid-flow-fiu-1" sourceRef="sid-start-receive-str" targetRef="sid-task-process-str"/>
+      <sequenceFlow id="sid-flow-fiu-2" sourceRef="sid-task-process-str" targetRef="sid-end-fiu"/>
+   </process>
+   <bpmndi:BPMNDiagram id="sid-diagram-1">
+      <bpmndi:BPMNPlane bpmnElement="sid-collab-1" id="sid-plane-1">
+         <bpmndi:BPMNShape bpmnElement="sid-pool-customer" id="sid-shape-pool-customer" isHorizontal="true">
+            <omgdc:Bounds height="150" width="1100" x="100" y="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-start-customer" id="sid-shape-start-customer">
+            <omgdc:Bounds height="30" width="30" x="150" y="110"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-task-request-relationship" id="sid-shape-task-request-relationship">
+            <omgdc:Bounds height="80" width="100" x="220" y="85"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-end-customer" id="sid-shape-end-customer">
+            <omgdc:Bounds height="28" width="28" x="360" y="111"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-cust-1" id="sid-edge-cust-1">
+            <omgdi:waypoint x="180" y="125"/>
+            <omgdi:waypoint x="220" y="125"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-cust-2" id="sid-edge-cust-2">
+            <omgdi:waypoint x="320" y="125"/>
+            <omgdi:waypoint x="360" y="125"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape bpmnElement="sid-pool-obliged-entity" id="sid-shape-pool-obliged-entity" isHorizontal="true">
+            <omgdc:Bounds height="250" width="1100" x="100" y="220"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-start-receive-request" id="sid-shape-start-receive-request">
+            <omgdc:Bounds height="30" width="30" x="150" y="335"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-task-verify-identity" id="sid-shape-task-verify-identity">
+            <omgdc:Bounds height="80" width="100" x="220" y="310"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-gateway-compliance-check" id="sid-shape-gateway-compliance-check" isMarkerVisible="true">
+            <omgdc:Bounds height="40" width="40" x="360" y="330"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-task-establish-relationship" id="sid-shape-task-establish-relationship">
+            <omgdc:Bounds height="80" width="100" x="440" y="250"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-end-process-ok" id="sid-shape-end-process-ok">
+            <omgdc:Bounds height="28" width="28" x="580" y="276"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-task-terminate-relationship" id="sid-shape-task-terminate-relationship">
+            <omgdc:Bounds height="80" width="100" x="440" y="370"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-task-make-str" id="sid-shape-task-make-str">
+            <omgdc:Bounds height="80" width="100" x="580" y="370"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-end-process-terminated" id="sid-shape-end-process-terminated">
+            <omgdc:Bounds height="28" width="28" x="720" y="396"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-1" id="sid-edge-1">
+            <omgdi:waypoint x="180" y="350"/>
+            <omgdi:waypoint x="220" y="350"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-2" id="sid-edge-2">
+            <omgdi:waypoint x="320" y="350"/>
+            <omgdi:waypoint x="360" y="350"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-compliance-yes" id="sid-edge-compliance-yes">
+            <omgdi:waypoint x="380" y="330"/>
+            <omgdi:waypoint x="380" y="290"/>
+            <omgdi:waypoint x="440" y="290"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-3" id="sid-edge-3">
+            <omgdi:waypoint x="540" y="290"/>
+            <omgdi:waypoint x="580" y="290"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-compliance-no" id="sid-edge-compliance-no">
+            <omgdi:waypoint x="380" y="370"/>
+            <omgdi:waypoint x="380" y="410"/>
+            <omgdi:waypoint x="440" y="410"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-4" id="sid-edge-4">
+            <omgdi:waypoint x="540" y="410"/>
+            <omgdi:waypoint x="580" y="410"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-5" id="sid-edge-5">
+            <omgdi:waypoint x="680" y="410"/>
+            <omgdi:waypoint x="720" y="410"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape bpmnElement="sid-pool-fiu" id="sid-shape-pool-fiu" isHorizontal="true">
+            <omgdc:Bounds height="150" width="1100" x="100" y="490"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-start-receive-str" id="sid-shape-start-receive-str">
+            <omgdc:Bounds height="30" width="30" x="625" y="550"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-task-process-str" id="sid-shape-task-process-str">
+            <omgdc:Bounds height="80" width="100" x="700" y="525"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape bpmnElement="sid-end-fiu" id="sid-shape-end-fiu">
+            <omgdc:Bounds height="28" width="28" x="840" y="551"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-fiu-1" id="sid-edge-fiu-1">
+            <omgdi:waypoint x="655" y="565"/>
+            <omgdi:waypoint x="700" y="565"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-flow-fiu-2" id="sid-edge-fiu-2">
+            <omgdi:waypoint x="800" y="565"/>
+            <omgdi:waypoint x="840" y="565"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-msg-customer-to-entity" id="sid-edge-msg-customer-to-entity">
+            <omgdi:waypoint x="270" y="165"/>
+            <omgdi:waypoint x="270" y="210"/>
+            <omgdi:waypoint x="165" y="210"/>
+            <omgdi:waypoint x="165" y="335"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge bpmnElement="sid-msg-entity-to-fiu" id="sid-edge-msg-entity-to-fiu">
+            <omgdi:waypoint x="630" y="450"/>
+            <omgdi:waypoint x="630" y="480"/>
+            <omgdi:waypoint x="640" y="480"/>
+            <omgdi:waypoint x="640" y="550"/>
+         </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+   </bpmndi:BPMNDiagram>
+</definitions>

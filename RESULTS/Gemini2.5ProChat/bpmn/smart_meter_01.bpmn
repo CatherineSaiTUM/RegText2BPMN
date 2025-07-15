@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://www.signavio.com" exporter="Signavio Process Editor" exporterVersion="19.2.2" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd">
+   <collaboration id="collaboration_1">
+      <participant id="participant_customer" name="Customer" processRef="process_customer" />
+      <participant id="participant_utility" name="Utility Provider" processRef="process_utility" />
+      <messageFlow id="message_flow_request" sourceRef="task_inform_operator" targetRef="start_request_received" />
+   </collaboration>
+   <process id="process_customer" isExecutable="false">
+      <startEvent id="start_customer" name="Start" />
+      <task id="task_inform_operator" name="Inform network operator about display change">
+         <incoming>seq_flow_customer_1</incoming>
+         <outgoing>seq_flow_customer_2</outgoing>
+      </task>
+      <endEvent id="end_customer" name="End">
+         <incoming>seq_flow_customer_2</incoming>
+      </endEvent>
+      <sequenceFlow id="seq_flow_customer_1" sourceRef="start_customer" targetRef="task_inform_operator" />
+      <sequenceFlow id="seq_flow_customer_2" sourceRef="task_inform_operator" targetRef="end_customer" />
+   </process>
+   <process id="process_utility" isExecutable="false">
+      <laneSet id="lane_set_utility">
+         <lane id="lane_operator" name="Network Operator">
+            <flowNodeRef>start_request_received</flowNodeRef>
+            <flowNodeRef>gateway_request_type</flowNodeRef>
+            <flowNodeRef>task_initiate_activation</flowNodeRef>
+            <flowNodeRef>task_initiate_deactivation</flowNodeRef>
+         </lane>
+         <lane id="lane_system" name="System / Meter">
+            <flowNodeRef>task_activate_display</flowNodeRef>
+            <flowNodeRef>task_deactivate_display</flowNodeRef>
+            <flowNodeRef>gateway_merge_tasks</flowNodeRef>
+            <flowNodeRef>gateway_parallel_fork</flowNodeRef>
+            <flowNodeRef>task_transmit_status</flowNodeRef>
+            <flowNodeRef>task_enter_logbook</flowNodeRef>
+            <flowNodeRef>gateway_parallel_join</flowNodeRef>
+            <flowNodeRef>end_utility</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="start_request_received" name="Change Request Received">
+         <outgoing>seq_flow_utility_1</outgoing>
+         <messageEventDefinition />
+      </startEvent>
+      <exclusiveGateway id="gateway_request_type" name="Request Type?">
+         <incoming>seq_flow_utility_1</incoming>
+         <outgoing>seq_flow_to_activate</outgoing>
+         <outgoing>seq_flow_to_deactivate</outgoing>
+      </exclusiveGateway>
+      <task id="task_initiate_activation" name="Initiate Activation">
+         <incoming>seq_flow_to_activate</incoming>
+         <outgoing>seq_flow_activation_path</outgoing>
+      </task>
+      <task id="task_initiate_deactivation" name="Initiate Deactivation">
+         <incoming>seq_flow_to_deactivate</incoming>
+         <outgoing>seq_flow_deactivation_path</outgoing>
+      </task>
+      <task id="task_activate_display" name="Activate consumption time series display">
+         <incoming>seq_flow_activation_path</incoming>
+         <outgoing>seq_flow_to_merge_1</outgoing>
+      </task>
+      <task id="task_deactivate_display" name="Deactivate consumption time series display">
+         <incoming>seq_flow_deactivation_path</incoming>
+         <outgoing>seq_flow_to_merge_2</outgoing>
+      </task>
+      <exclusiveGateway id="gateway_merge_tasks">
+         <incoming>seq_flow_to_merge_1</incoming>
+         <incoming>seq_flow_to_merge_2</incoming>
+         <outgoing>seq_flow_merged</outgoing>
+      </exclusiveGateway>
+      <parallelGateway id="gateway_parallel_fork">
+         <incoming>seq_flow_merged</incoming>
+         <outgoing>seq_flow_to_transmit</outgoing>
+         <outgoing>seq_flow_to_logbook</outgoing>
+      </parallelGateway>
+      <task id="task_transmit_status" name="Transmit status to central system (ALARM/EVENT)">
+         <incoming>seq_flow_to_transmit</incoming>
+         <outgoing>seq_flow_from_transmit</outgoing>
+      </task>
+      <task id="task_enter_logbook" name="Enter status in logbook">
+         <incoming>seq_flow_to_logbook</incoming>
+         <outgoing>seq_flow_from_logbook</outgoing>
+      </task>
+      <parallelGateway id="gateway_parallel_join">
+         <incoming>seq_flow_from_transmit</incoming>
+         <incoming>seq_flow_from_logbook</incoming>
+         <outgoing>seq_flow_utility_final</outgoing>
+      </parallelGateway>
+      <endEvent id="end_utility" name="Process Finished">
+         <incoming>seq_flow_utility_final</incoming>
+      </endEvent>
+      <sequenceFlow id="seq_flow_utility_1" sourceRef="start_request_received" targetRef="gateway_request_type" />
+      <sequenceFlow id="seq_flow_to_activate" name="Activate" sourceRef="gateway_request_type" targetRef="task_initiate_activation" />
+      <sequenceFlow id="seq_flow_to_deactivate" name="Deactivate" sourceRef="gateway_request_type" targetRef="task_initiate_deactivation" />
+      <sequenceFlow id="seq_flow_activation_path" sourceRef="task_initiate_activation" targetRef="task_activate_display" />
+      <sequenceFlow id="seq_flow_deactivation_path" sourceRef="task_initiate_deactivation" targetRef="task_deactivate_display" />
+      <sequenceFlow id="seq_flow_to_merge_1" sourceRef="task_activate_display" targetRef="gateway_merge_tasks" />
+      <sequenceFlow id="seq_flow_to_merge_2" sourceRef="task_deactivate_display" targetRef="gateway_merge_tasks" />
+      <sequenceFlow id="seq_flow_merged" sourceRef="gateway_merge_tasks" targetRef="gateway_parallel_fork" />
+      <sequenceFlow id="seq_flow_to_transmit" sourceRef="gateway_parallel_fork" targetRef="task_transmit_status" />
+      <sequenceFlow id="seq_flow_to_logbook" sourceRef="gateway_parallel_fork" targetRef="task_enter_logbook" />
+      <sequenceFlow id="seq_flow_from_transmit" sourceRef="task_transmit_status" targetRef="gateway_parallel_join" />
+      <sequenceFlow id="seq_flow_from_logbook" sourceRef="task_enter_logbook" targetRef="gateway_parallel_join" />
+      <sequenceFlow id="seq_flow_utility_final" sourceRef="gateway_parallel_join" targetRef="end_utility" />
+   </process>
+   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+      <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="collaboration_1">
+         <bpmndi:BPMNShape id="shape_participant_customer" bpmnElement="participant_customer" isHorizontal="true">
+            <omgdc:Bounds x="160" y="80" width="1050" height="150" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_start_customer" bpmnElement="start_customer">
+            <omgdc:Bounds x="210" y="132" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="217" y="175" width="27" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_inform_operator" bpmnElement="task_inform_operator">
+            <omgdc:Bounds x="310" y="110" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_customer" bpmnElement="end_customer">
+            <omgdc:Bounds x="472" y="132" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="480" y="175" width="20" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_participant_utility" bpmnElement="participant_utility" isHorizontal="true">
+            <omgdc:Bounds x="160" y="280" width="1050" height="400" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_lane_operator" bpmnElement="lane_operator" isHorizontal="true">
+            <omgdc:Bounds x="190" y="280" width="1020" height="200" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_lane_system" bpmnElement="lane_system" isHorizontal="true">
+            <omgdc:Bounds x="190" y="480" width="1020" height="200" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_start_request_received" bpmnElement="start_request_received">
+            <omgdc:Bounds x="242" y="362" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="221" y="405" width="80" height="27" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gateway_request_type" bpmnElement="gateway_request_type" isGateway="true">
+            <omgdc:Bounds x="345" y="355" width="50" height="50" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="333" y="325" width="75" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_initiate_activation" bpmnElement="task_initiate_activation">
+            <omgdc:Bounds x="460" y="290" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_initiate_deactivation" bpmnElement="task_initiate_deactivation">
+            <omgdc:Bounds x="460" y="400" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_activate_display" bpmnElement="task_activate_display">
+            <omgdc:Bounds x="610" y="500" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_deactivate_display" bpmnElement="task_deactivate_display">
+            <omgdc:Bounds x="610" y="600" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gateway_merge_tasks" bpmnElement="gateway_merge_tasks" isGateway="true">
+            <omgdc:Bounds x="755" y="555" width="50" height="50" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gateway_parallel_fork" bpmnElement="gateway_parallel_fork" isGateway="true">
+            <omgdc:Bounds x="845" y="555" width="50" height="50" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_transmit_status" bpmnElement="task_transmit_status">
+            <omgdc:Bounds x="930" y="500" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_enter_logbook" bpmnElement="task_enter_logbook">
+            <omgdc:Bounds x="930" y="600" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gateway_parallel_join" bpmnElement="gateway_parallel_join" isGateway="true">
+            <omgdc:Bounds x="1065" y="555" width="50" height="50" />
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_utility" bpmnElement="end_utility">
+            <omgdc:Bounds x="1152" y="562" width="36" height="36" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="1128" y="605" width="85" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge_seq_flow_customer_1" bpmnElement="seq_flow_customer_1">
+            <omgdi:waypoint x="246" y="150" />
+            <omgdi:waypoint x="310" y="150" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_customer_2" bpmnElement="seq_flow_customer_2">
+            <omgdi:waypoint x="410" y="150" />
+            <omgdi:waypoint x="472" y="150" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_message_flow_request" bpmnElement="message_flow_request">
+            <omgdi:waypoint x="360" y="190" />
+            <omgdi:waypoint x="360" y="280" />
+            <omgdi:waypoint x="260" y="280" />
+            <omgdi:waypoint x="260" y="362" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_utility_1" bpmnElement="seq_flow_utility_1">
+            <omgdi:waypoint x="278" y="380" />
+            <omgdi:waypoint x="345" y="380" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_to_activate" bpmnElement="seq_flow_to_activate">
+            <omgdi:waypoint x="370" y="355" />
+            <omgdi:waypoint x="370" y="330" />
+            <omgdi:waypoint x="460" y="330" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="385" y="333" width="43" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_to_deactivate" bpmnElement="seq_flow_to_deactivate">
+            <omgdi:waypoint x="370" y="405" />
+            <omgdi:waypoint x="370" y="440" />
+            <omgdi:waypoint x="460" y="440" />
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="378" y="443" width="58" height="14" />
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_activation_path" bpmnElement="seq_flow_activation_path">
+            <omgdi:waypoint x="510" y="370" />
+            <omgdi:waypoint x="510" y="540" />
+            <omgdi:waypoint x="610" y="540" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_deactivation_path" bpmnElement="seq_flow_deactivation_path">
+            <omgdi:waypoint x="510" y="480" />
+            <omgdi:waypoint x="510" y="640" />
+            <omgdi:waypoint x="610" y="640" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_to_merge_1" bpmnElement="seq_flow_to_merge_1">
+            <omgdi:waypoint x="710" y="540" />
+            <omgdi:waypoint x="780" y="540" />
+            <omgdi:waypoint x="780" y="555" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_to_merge_2" bpmnElement="seq_flow_to_merge_2">
+            <omgdi:waypoint x="710" y="640" />
+            <omgdi:waypoint x="780" y="640" />
+            <omgdi:waypoint x="780" y="605" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_merged" bpmnElement="seq_flow_merged">
+            <omgdi:waypoint x="805" y="580" />
+            <omgdi:waypoint x="845" y="580" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_to_transmit" bpmnElement="seq_flow_to_transmit">
+            <omgdi:waypoint x="870" y="555" />
+            <omgdi:waypoint x="870" y="540" />
+            <omgdi:waypoint x="930" y="540" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_to_logbook" bpmnElement="seq_flow_to_logbook">
+            <omgdi:waypoint x="870" y="605" />
+            <omgdi:waypoint x="870" y="640" />
+            <omgdi:waypoint x="930" y="640" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_from_transmit" bpmnElement="seq_flow_from_transmit">
+            <omgdi:waypoint x="1030" y="540" />
+            <omgdi:waypoint x="1090" y="540" />
+            <omgdi:waypoint x="1090" y="555" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_from_logbook" bpmnElement="seq_flow_from_logbook">
+            <omgdi:waypoint x="1030" y="640" />
+            <omgdi:waypoint x="1090" y="640" />
+            <omgdi:waypoint x="1090" y="605" />
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_flow_utility_final" bpmnElement="seq_flow_utility_final">
+            <omgdi:waypoint x="1115" y="580" />
+            <omgdi:waypoint x="1152" y="580" />
+         </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+   </bpmndi:BPMNDiagram>
+</definitions>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://www.signavio.com" exporter="Gemini AI" exporterVersion="1.0">
+  <collaboration id="collab_1">
+    <participant id="actor_customer" name="Customer" processRef="proc_customer" />
+    <participant id="actor_network_operator" name="Network Operator" processRef="proc_network_operator" />
+    <participant id="actor_meter" name="Meter" processRef="proc_meter" />
+    <participant id="actor_central_system" name="Central System" processRef="proc_central_system" />
+    <messageFlow id="msg_customer_to_operator" sourceRef="task_inform_operator" targetRef="event_receive_request" />
+    <messageFlow id="msg_operator_to_meter" sourceRef="task_send_command" targetRef="event_receive_command" />
+    <messageFlow id="msg_meter_to_system" sourceRef="task_report_status" targetRef="event_receive_status" />
+  </collaboration>
+  <process id="proc_customer" isExecutable="false">
+    <startEvent id="event_start_customer" name="Start" />
+    <task id="task_inform_operator" name="Inform network operator about desired display status" />
+    <endEvent id="event_end_customer" name="End" />
+    <sequenceFlow id="flow_cust_1" sourceRef="event_start_customer" targetRef="task_inform_operator" />
+    <sequenceFlow id="flow_cust_2" sourceRef="task_inform_operator" targetRef="event_end_customer" />
+  </process>
+  <process id="proc_network_operator" isExecutable="false">
+    <startEvent id="event_receive_request" name="Receive customer request">
+      <messageEventDefinition id="msg_def_request" />
+    </startEvent>
+    <task id="task_send_command" name="Activate or Deactivate consumption display via WAN" />
+    <endEvent id="event_end_operator" name="End" />
+    <sequenceFlow id="flow_op_1" sourceRef="event_receive_request" targetRef="task_send_command" />
+    <sequenceFlow id="flow_op_2" sourceRef="task_send_command" targetRef="event_end_operator" />
+  </process>
+  <process id="proc_meter" isExecutable="false">
+    <startEvent id="event_receive_command" name="Receive command">
+      <messageEventDefinition id="msg_def_command" />
+    </startEvent>
+    <exclusiveGateway id="gateway_decision" name="Activation or Deactivation?" />
+    <task id="task_activate" name="Activate display" />
+    <task id="task_deactivate" name="Deactivate display" />
+    <exclusiveGateway id="gateway_merge" />
+    <task id="task_report_status" name="Report status (ALARM/EVENT) and log" />
+    <endEvent id="event_end_meter" name="End" />
+    <sequenceFlow id="flow_meter_1" sourceRef="event_receive_command" targetRef="gateway_decision" />
+    <sequenceFlow id="flow_meter_2" name="Activate" sourceRef="gateway_decision" targetRef="task_activate" />
+    <sequenceFlow id="flow_meter_3" name="Deactivate" sourceRef="gateway_decision" targetRef="task_deactivate" />
+    <sequenceFlow id="flow_meter_4" sourceRef="task_activate" targetRef="gateway_merge" />
+    <sequenceFlow id="flow_meter_5" sourceRef="task_deactivate" targetRef="gateway_merge" />
+    <sequenceFlow id="flow_meter_6" sourceRef="gateway_merge" targetRef="task_report_status" />
+    <sequenceFlow id="flow_meter_7" sourceRef="task_report_status" targetRef="event_end_meter" />
+  </process>
+  <process id="proc_central_system" isExecutable="false">
+    <startEvent id="event_receive_status" name="Receive status">
+      <messageEventDefinition id="msg_def_status" />
+    </startEvent>
+    <endEvent id="event_end_system" name="End" />
+    <sequenceFlow id="flow_sys_1" sourceRef="event_receive_status" targetRef="event_end_system" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="collab_1">
+      <bpmndi:BPMNShape id="shape_actor_customer" bpmnElement="actor_customer" isHorizontal="true">
+        <omgdc:Bounds x="100" y="50" width="750" height="150" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_actor_network_operator" bpmnElement="actor_network_operator" isHorizontal="true">
+        <omgdc:Bounds x="100" y="200" width="750" height="150" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_actor_meter" bpmnElement="actor_meter" isHorizontal="true">
+        <omgdc:Bounds x="100" y="350" width="750" height="180" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_actor_central_system" bpmnElement="actor_central_system" isHorizontal="true">
+        <omgdc:Bounds x="100" y="530" width="750" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_start_customer" bpmnElement="event_start_customer">
+        <omgdc:Bounds x="150" y="107" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="154" y="150" width="28" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_task_inform_operator" bpmnElement="task_inform_operator">
+        <omgdc:Bounds x="230" y="85" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_end_customer" bpmnElement="event_end_customer">
+        <omgdc:Bounds x="370" y="107" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="378" y="150" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge_flow_cust_1" bpmnElement="flow_cust_1">
+        <omgdi:waypoint x="186" y="125" />
+        <omgdi:waypoint x="230" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_flow_cust_2" bpmnElement="flow_cust_2">
+        <omgdi:waypoint x="330" y="125" />
+        <omgdi:waypoint x="370" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="shape_receive_request" bpmnElement="event_receive_request">
+        <omgdc:Bounds x="150" y="257" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="130" y="300" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_send_command" bpmnElement="task_send_command">
+        <omgdc:Bounds x="230" y="235" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_end_operator" bpmnElement="event_end_operator">
+        <omgdc:Bounds x="370" y="257" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="378" y="300" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge_flow_op_1" bpmnElement="flow_op_1">
+        <omgdi:waypoint x="186" y="275" />
+        <omgdi:waypoint x="230" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_flow_op_2" bpmnElement="flow_op_2">
+        <omgdi:waypoint x="330" y="275" />
+        <omgdi:waypoint x="370" y="275" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="shape_receive_command" bpmnElement="event_receive_command">
+        <omgdc:Bounds x="150" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="127" y="465" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_gateway_decision" bpmnElement="gateway_decision" isMarkerVisible="true">
+        <omgdc:Bounds x="235" y="415" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="219" y="385" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_task_activate" bpmnElement="task_activate">
+        <omgdc:Bounds x="330" y="380" width="100" height="40" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_task_deactivate" bpmnElement="task_deactivate">
+        <omgdc:Bounds x="330" y="450" width="100" height="40" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_gateway_merge" bpmnElement="gateway_merge">
+        <omgdc:Bounds x="475" y="415" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_task_report_status" bpmnElement="task_report_status">
+        <omgdc:Bounds x="570" y="400" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_end_meter" bpmnElement="event_end_meter">
+        <omgdc:Bounds x="714" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="722" y="465" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge_flow_meter_1" bpmnElement="flow_meter_1">
+        <omgdi:waypoint x="186" y="440" />
+        <omgdi:waypoint x="235" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_flow_meter_2" bpmnElement="flow_meter_2">
+        <omgdi:waypoint x="260" y="415" />
+        <omgdi:waypoint x="260" y="400" />
+        <omgdi:waypoint x="330" y="400" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="270" y="385" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_flow_meter_3" bpmnElement="flow_meter_3">
+        <omgdi:waypoint x="260" y="465" />
+        <omgdi:waypoint x="260" y="470" />
+        <omgdi:waypoint x="330" y="470" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="265" y="475" width="59" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_flow_meter_4" bpmnElement="flow_meter_4">
+        <omgdi:waypoint x="430" y="400" />
+        <omgdi:waypoint x="500" y="400" />
+        <omgdi:waypoint x="500" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_flow_meter_5" bpmnElement="flow_meter_5">
+        <omgdi:waypoint x="430" y="470" />
+        <omgdi:waypoint x="500" y="470" />
+        <omgdi:waypoint x="500" y="465" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_flow_meter_6" bpmnElement="flow_meter_6">
+        <omgdi:waypoint x="525" y="440" />
+        <omgdi:waypoint x="570" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_flow_meter_7" bpmnElement="flow_meter_7">
+        <omgdi:waypoint x="670" y="440" />
+        <omgdi:waypoint x="714" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="shape_receive_status" bpmnElement="event_receive_status">
+        <omgdc:Bounds x="150" y="572" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="131" y="615" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_end_system" bpmnElement="event_end_system">
+        <omgdc:Bounds x="234" y="572" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="242" y="615" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge_flow_sys_1" bpmnElement="flow_sys_1">
+        <omgdi:waypoint x="186" y="590" />
+        <omgdi:waypoint x="234" y="590" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_msg_customer_to_operator" bpmnElement="msg_customer_to_operator">
+        <omgdi:waypoint x="280" y="165" />
+        <omgdi:waypoint x="280" y="235" />
+        <omgdi:waypoint x="178" y="235" />
+        <omgdi:waypoint x="178" y="257" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_msg_operator_to_meter" bpmnElement="msg_operator_to_meter">
+        <omgdi:waypoint x="280" y="315" />
+        <omgdi:waypoint x="280" y="385" />
+        <omgdi:waypoint x="178" y="385" />
+        <omgdi:waypoint x="178" y="422" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_msg_meter_to_system" bpmnElement="msg_meter_to_system">
+        <omgdi:waypoint x="620" y="480" />
+        <omgdi:waypoint x="620" y="555" />
+        <omgdi:waypoint x="178" y="555" />
+        <omgdi:waypoint x="178" y="572" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

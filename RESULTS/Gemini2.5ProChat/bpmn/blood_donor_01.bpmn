@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             targetNamespace="http://www.example.com/bpmn/donor-selection"
+             id="definitions-donor-selection">
+
+  <collaboration id="collaboration-1">
+    <participant id="participant-donor" name="Donor" processRef="process-donor"/>
+    <participant id="participant-blood-establishment" name="Blood Establishment" processRef="process-blood-establishment"/>
+    <messageFlow id="msg-flow-info-to-donor" sourceRef="task-provide-info" targetRef="task-receive-info-consent"/>
+    <messageFlow id="msg-flow-questionnaire-to-staff" sourceRef="task-fill-questionnaire" targetRef="task-conduct-interview"/>
+  </collaboration>
+
+  <process id="process-donor" isExecutable="false">
+    <startEvent id="start-donor-arrives" name="Donor Arrives"/>
+    <task id="task-receive-info-consent" name="Receive Information and provide consent"/>
+    <task id="task-provide-identity" name="Provide Identity"/>
+    <task id="task-fill-questionnaire" name="Complete Questionnaire"/>
+    <task id="task-undergo-assessment" name="Undergo Interview and Examination"/>
+    <task id="task-donate" name="Donate Blood/Components"/>
+    <task id="task-receive-deferral-info" name="Receive Deferral Reason"/>
+    <endEvent id="end-donor-leaves" name="Process Complete for Donor"/>
+    
+    <sequenceFlow id="flow-d1" sourceRef="start-donor-arrives" targetRef="task-receive-info-consent"/>
+    <sequenceFlow id="flow-d2" sourceRef="task-receive-info-consent" targetRef="task-provide-identity"/>
+    <sequenceFlow id="flow-d3" sourceRef="task-provide-identity" targetRef="task-fill-questionnaire"/>
+    <sequenceFlow id="flow-d4" sourceRef="task-fill-questionnaire" targetRef="task-undergo-assessment"/>
+    <sequenceFlow id="flow-d5" sourceRef="task-undergo-assessment" targetRef="end-donor-leaves" />
+  </process>
+
+  <process id="process-blood-establishment" isExecutable="false">
+    <laneSet id="laneSet-be">
+      <lane id="lane-qualified-individual" name="Qualified Individual">
+        <flowNodeRef>task-provide-info</flowNodeRef>
+        <flowNodeRef>task-conduct-interview</flowNodeRef>
+        <flowNodeRef>task-determine-haemoglobin</flowNodeRef>
+        <flowNodeRef>gateway-eligibility-check</flowNodeRef>
+        <flowNodeRef>task-explain-deferral</flowNodeRef>
+        <flowNodeRef>end-deferred</flowNodeRef>
+        <flowNodeRef>task-perform-donation</flowNodeRef>
+        <flowNodeRef>task-provide-post-donation-info</flowNodeRef>
+        <flowNodeRef>end-donation-complete</flowNodeRef>
+        <flowNodeRef>gateway-refer-to-physician</flowNodeRef>
+      </lane>
+      <lane id="lane-physician" name="Physician">
+        <flowNodeRef>task-physician-decision</flowNodeRef>
+      </lane>
+    </laneSet>
+
+    <task id="task-provide-info" name="Provide Information to Donor"/>
+    <task id="task-conduct-interview" name="Conduct Interview &amp; Initial Assessment"/>
+    <task id="task-determine-haemoglobin" name="Determine Haemoglobin"/>
+    <exclusiveGateway id="gateway-refer-to-physician" name="Referral needed?"/>
+    <task id="task-physician-decision" name="Make Final Eligibility Decision"/>
+    <exclusiveGateway id="gateway-eligibility-check" name="Is Donor Eligible?"/>
+    <task id="task-explain-deferral" name="Explain Deferral Reason"/>
+    <endEvent id="end-deferred" name="Donor Deferred"/>
+    <task id="task-perform-donation" name="Perform Donation"/>
+    <task id="task-provide-post-donation-info" name="Provide Post-Donation Instructions"/>
+    <endEvent id="end-donation-complete" name="Donation Complete"/>
+
+    <sequenceFlow id="flow-be1" sourceRef="task-provide-info" targetRef="task-conduct-interview"/>
+    <sequenceFlow id="flow-be2" sourceRef="task-conduct-interview" targetRef="task-determine-haemoglobin"/>
+    <sequenceFlow id="flow-be3" sourceRef="task-determine-haemoglobin" targetRef="gateway-refer-to-physician"/>
+    <sequenceFlow id="flow-be4" name="No" sourceRef="gateway-refer-to-physician" targetRef="gateway-eligibility-check"/>
+    <sequenceFlow id="flow-be5" name="Yes" sourceRef="gateway-refer-to-physician" targetRef="task-physician-decision"/>
+    <sequenceFlow id="flow-be6" sourceRef="task-physician-decision" targetRef="gateway-eligibility-check"/>
+    <sequenceFlow id="flow-be7" name="No (Deferred)" sourceRef="gateway-eligibility-check" targetRef="task-explain-deferral"/>
+    <sequenceFlow id="flow-be8" sourceRef="task-explain-deferral" targetRef="end-deferred"/>
+    <sequenceFlow id="flow-be9" name="Yes (Accepted)" sourceRef="gateway-eligibility-check" targetRef="task-perform-donation"/>
+    <sequenceFlow id="flow-be10" sourceRef="task-perform-donation" targetRef="task-provide-post-donation-info"/>
+    <sequenceFlow id="flow-be11" sourceRef="task-provide-post-donation-info" targetRef="end-donation-complete"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="collaboration-1">
+      <bpmndi:BPMNShape id="shape-participant-donor" bpmnElement="participant-donor" isHorizontal="true">
+        <omgdc:Bounds x="160" y="80" width="1200" height="250"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-participant-blood-establishment" bpmnElement="participant-blood-establishment" isHorizontal="true">
+        <omgdc:Bounds x="160" y="330" width="1200" height="400"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="shape-lane-qualified-individual" bpmnElement="lane-qualified-individual" isHorizontal="true">
+        <omgdc:Bounds x="190" y="330" width="1170" height="250"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-lane-physician" bpmnElement="lane-physician" isHorizontal="true">
+        <omgdc:Bounds x="190" y="580" width="1170" height="150"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="shape-start-donor-arrives" bpmnElement="start-donor-arrives">
+        <omgdc:Bounds x="220" y="182" width="36" height="36"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds x="208" y="225" width="80" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-receive-info-consent" bpmnElement="task-receive-info-consent">
+        <omgdc:Bounds x="300" y="160" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+       <bpmndi:BPMNShape id="shape-task-provide-identity" bpmnElement="task-provide-identity">
+        <omgdc:Bounds x="440" y="160" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-fill-questionnaire" bpmnElement="task-fill-questionnaire">
+        <omgdc:Bounds x="580" y="160" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-undergo-assessment" bpmnElement="task-undergo-assessment">
+        <omgdc:Bounds x="720" y="160" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+       <bpmndi:BPMNShape id="shape-task-donate" bpmnElement="task-donate">
+        <omgdc:Bounds x="1080" y="110" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-receive-deferral-info" bpmnElement="task-receive-deferral-info">
+        <omgdc:Bounds x="1080" y="220" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-end-donor-leaves" bpmnElement="end-donor-leaves">
+        <omgdc:Bounds x="1280" y="182" width="36" height="36"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds x="1255" y="225" width="87" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="shape-task-provide-info" bpmnElement="task-provide-info">
+        <omgdc:Bounds x="300" y="400" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-conduct-interview" bpmnElement="task-conduct-interview">
+        <omgdc:Bounds x="440" y="400" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-determine-haemoglobin" bpmnElement="task-determine-haemoglobin">
+        <omgdc:Bounds x="580" y="400" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-gateway-refer-to-physician" bpmnElement="gateway-refer-to-physician" isMarkerVisible="true">
+        <omgdc:Bounds x="748" y="415" width="50" height="50"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds x="728" y="385" width="90" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-physician-decision" bpmnElement="task-physician-decision">
+        <omgdc:Bounds x="840" y="610" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-gateway-eligibility-check" bpmnElement="gateway-eligibility-check" isMarkerVisible="true">
+        <omgdc:Bounds x="980" y="415" width="50" height="50"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds x="960" y="475" width="90" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-explain-deferral" bpmnElement="task-explain-deferral">
+        <omgdc:Bounds x="1080" y="500" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-end-deferred" bpmnElement="end-deferred">
+        <omgdc:Bounds x="1222" y="522" width="36" height="36"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds x="1200" y="565" width="80" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-perform-donation" bpmnElement="task-perform-donation">
+        <omgdc:Bounds x="1080" y="350" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-task-provide-post-donation-info" bpmnElement="task-provide-post-donation-info">
+        <omgdc:Bounds x="1220" y="350" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-end-donation-complete" bpmnElement="end-donation-complete">
+        <omgdc:Bounds x="1362" y="372" width="36" height="36"/>
+        <bpmndi:BPMNLabel><omgdc:Bounds x="1340" y="415" width="80" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="edge-msg-flow-info-to-donor" bpmnElement="msg-flow-info-to-donor">
+        <omgdi:waypoint x="350" y="400"/>
+        <omgdi:waypoint x="350" y="240"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-msg-flow-questionnaire-to-staff" bpmnElement="msg-flow-questionnaire-to-staff">
+        <omgdi:waypoint x="630" y="240"/>
+        <omgdi:waypoint x="630" y="400"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-d1" bpmnElement="flow-d1"><omgdi:waypoint x="256" y="200"/><omgdi:waypoint x="300" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-d2" bpmnElement="flow-d2"><omgdi:waypoint x="400" y="200"/><omgdi:waypoint x="440" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-d3" bpmnElement="flow-d3"><omgdi:waypoint x="540" y="200"/><omgdi:waypoint x="580" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-d4" bpmnElement="flow-d4"><omgdi:waypoint x="680" y="200"/><omgdi:waypoint x="720" y="200"/></bpmndi:BPMNEdge>
+       <bpmndi:BPMNEdge id="edge-flow-d5" bpmnElement="flow-d5"><omgdi:waypoint x="820" y="200"/><omgdi:waypoint x="1280" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be1" bpmnElement="flow-be1"><omgdi:waypoint x="400" y="440"/><omgdi:waypoint x="440" y="440"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be2" bpmnElement="flow-be2"><omgdi:waypoint x="540" y="440"/><omgdi:waypoint x="580" y="440"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be3" bpmnElement="flow-be3"><omgdi:waypoint x="680" y="440"/><omgdi:waypoint x="748" y="440"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be4" bpmnElement="flow-be4"><omgdi:waypoint x="798" y="440"/><omgdi:waypoint x="980" y="440"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be5" bpmnElement="flow-be5"><omgdi:waypoint x="773" y="465"/><omgdi:waypoint x="773" y="650"/><omgdi:waypoint x="840" y="650"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be6" bpmnElement="flow-be6"><omgdi:waypoint x="940" y="650"/><omgdi:waypoint x="1005" y="650"/><omgdi:waypoint x="1005" y="465"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be7" bpmnElement="flow-be7"><omgdi:waypoint x="1005" y="465"/><omgdi:waypoint x="1005" y="540"/><omgdi:waypoint x="1080" y="540"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be8" bpmnElement="flow-be8"><omgdi:waypoint x="1180" y="540"/><omgdi:waypoint x="1222" y="540"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be9" bpmnElement="flow-be9"><omgdi:waypoint x="1005" y="415"/><omgdi:waypoint x="1005" y="390"/><omgdi:waypoint x="1080" y="390"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be10" bpmnElement="flow-be10"><omgdi:waypoint x="1180" y="390"/><omgdi:waypoint x="1220" y="390"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-flow-be11" bpmnElement="flow-be11"><omgdi:waypoint x="1320" y="390"/><omgdi:waypoint x="1362" y="390"/></bpmndi:BPMNEdge>
+      
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

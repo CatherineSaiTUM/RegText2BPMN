@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:signavio="http://www.signavio.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" exporter="Gemini AI" id="sid-_def-1" targetNamespace="http://www.signavio.com/bpmn20" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd">
+   <collaboration id="sid-collab-1">
+      <participant id="sid-actor-customer" name="Customer" processRef="sid-process-customer"/>
+      <participant id="sid-actor-network-operator" name="Network Operator" processRef="sid-process-network-operator"/>
+      <participant id="sid-actor-meter" name="Meter" processRef="sid-process-meter"/>
+      <messageFlow id="sid-msg-customer-to-operator" sourceRef="sid-task-inform-operator" targetRef="sid-startevent-request-received"/>
+      <messageFlow id="sid-msg-operator-to-meter" sourceRef="sid-task-send-command" targetRef="sid-startevent-command-received"/>
+   </collaboration>
+   <process id="sid-process-customer" isClosed="false" isExecutable="false" name="Customer Process">
+      <laneSet>
+         <lane id="sid-lane-customer">
+            <flowNodeRef>sid-startevent-customer</flowNodeRef>
+            <flowNodeRef>sid-gateway-customer-choice</flowNodeRef>
+            <flowNodeRef>sid-task-inform-operator</flowNodeRef>
+            <flowNodeRef>sid-endevent-customer</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="sid-startevent-customer" name="Wishes to change display setting"/>
+      <exclusiveGateway id="sid-gateway-customer-choice" name="Activate or Deactivate?" gatewayDirection="Diverging"/>
+      <task id="sid-task-inform-operator" name="Inform network operator"/>
+      <endEvent id="sid-endevent-customer" name="Request sent"/>
+      <sequenceFlow id="sid-seq-cust-start-to-gw" sourceRef="sid-startevent-customer" targetRef="sid-gateway-customer-choice"/>
+      <sequenceFlow id="sid-seq-cust-gw-to-activate" name="Activate" sourceRef="sid-gateway-customer-choice" targetRef="sid-task-inform-operator"/>
+      <sequenceFlow id="sid-seq-cust-gw-to-deactivate" name="Deactivate" sourceRef="sid-gateway-customer-choice" targetRef="sid-task-inform-operator"/>
+      <sequenceFlow id="sid-seq-cust-task-to-end" sourceRef="sid-task-inform-operator" targetRef="sid-endevent-customer"/>
+   </process>
+   <process id="sid-process-network-operator" isClosed="false" isExecutable="false" name="Network Operator Process">
+      <laneSet>
+         <lane id="sid-lane-network-operator">
+            <flowNodeRef>sid-startevent-request-received</flowNodeRef>
+            <flowNodeRef>sid-task-send-command</flowNodeRef>
+            <flowNodeRef>sid-endevent-operator</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="sid-startevent-request-received" name="Request received">
+         <messageEventDefinition messageRef="sid-msg-customer-to-operator"/>
+      </startEvent>
+      <task id="sid-task-send-command" name="Activate/deactivate via WAN interface"/>
+      <endEvent id="sid-endevent-operator" name="Command sent"/>
+      <sequenceFlow id="sid-seq-op-start-to-task" sourceRef="sid-startevent-request-received" targetRef="sid-task-send-command"/>
+      <sequenceFlow id="sid-seq-op-task-to-end" sourceRef="sid-task-send-command" targetRef="sid-endevent-operator"/>
+   </process>
+   <process id="sid-process-meter" isClosed="false" isExecutable="false" name="Meter Process">
+      <laneSet>
+         <lane id="sid-lane-meter">
+            <flowNodeRef>sid-startevent-command-received</flowNodeRef>
+            <flowNodeRef>sid-gateway-meter-choice</flowNodeRef>
+            <flowNodeRef>sid-task-activate</flowNodeRef>
+            <flowNodeRef>sid-task-deactivate</flowNodeRef>
+            <flowNodeRef>sid-gateway-meter-merge</flowNodeRef>
+            <flowNodeRef>sid-task-transmit-status</flowNodeRef>
+            <flowNodeRef>sid-task-enter-logbook</flowNodeRef>
+            <flowNodeRef>sid-endevent-meter</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="sid-startevent-command-received" name="Command received">
+         <messageEventDefinition messageRef="sid-msg-operator-to-meter"/>
+      </startEvent>
+      <exclusiveGateway id="sid-gateway-meter-choice" name="Command type?" gatewayDirection="Diverging"/>
+      <task id="sid-task-activate" name="Activate display"/>
+      <task id="sid-task-deactivate" name="Deactivate display"/>
+      <exclusiveGateway id="sid-gateway-meter-merge" gatewayDirection="Converging"/>
+      <task id="sid-task-transmit-status" name="Transmit status to central system"/>
+      <task id="sid-task-enter-logbook" name="Enter in logbook"/>
+      <endEvent id="sid-endevent-meter" name="Process finished"/>
+      <sequenceFlow id="sid-seq-meter-start-to-gw" sourceRef="sid-startevent-command-received" targetRef="sid-gateway-meter-choice"/>
+      <sequenceFlow id="sid-seq-meter-gw-to-activate" name="Activate" sourceRef="sid-gateway-meter-choice" targetRef="sid-task-activate"/>
+      <sequenceFlow id="sid-seq-meter-gw-to-deactivate" name="Deactivate" sourceRef="sid-gateway-meter-choice" targetRef="sid-task-deactivate"/>
+      <sequenceFlow id="sid-seq-meter-activate-to-merge" sourceRef="sid-task-activate" targetRef="sid-gateway-meter-merge"/>
+      <sequenceFlow id="sid-seq-meter-deactivate-to-merge" sourceRef="sid-task-deactivate" targetRef="sid-gateway-meter-merge"/>
+      <sequenceFlow id="sid-seq-meter-merge-to-transmit" sourceRef="sid-gateway-meter-merge" targetRef="sid-task-transmit-status"/>
+      <sequenceFlow id="sid-seq-meter-transmit-to-log" sourceRef="sid-task-transmit-status" targetRef="sid-task-enter-logbook"/>
+      <sequenceFlow id="sid-seq-meter-log-to-end" sourceRef="sid-task-enter-logbook" targetRef="sid-endevent-meter"/>
+   </process>
+   <bpmndi:BPMNDiagram id="sid-diag-1">
+      <bpmndi:BPMNPlane id="sid-plane-1" bpmnElement="sid-collab-1">
+         <bpmndi:BPMNShape id="shape-actor-customer" bpmnElement="sid-actor-customer" isHorizontal="true">
+            <omgdc:Bounds x="100" y="50" width="800" height="200"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-actor-network-operator" bpmnElement="sid-actor-network-operator" isHorizontal="true">
+            <omgdc:Bounds x="100" y="300" width="800" height="150"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-actor-meter" bpmnElement="sid-actor-meter" isHorizontal="true">
+            <omgdc:Bounds x="100" y="500" width="800" height="250"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-startevent-customer" bpmnElement="sid-startevent-customer">
+            <omgdc:Bounds x="150" y="132" width="36" height="36"/>
+            <bpmndi:BPMNLabel>
+               <omgdc:Bounds x="130" y="178" width="80" height="40"/>
+            </bpmndi:BPMNLabel>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-gateway-customer-choice" bpmnElement="sid-gateway-customer-choice" isMarkerVisible="true">
+            <omgdc:Bounds x="250" y="125" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-task-inform-operator" bpmnElement="sid-task-inform-operator">
+            <omgdc:Bounds x="360" y="110" width="100" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-endevent-customer" bpmnElement="sid-endevent-customer">
+            <omgdc:Bounds x="520" y="132" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-startevent-request-received" bpmnElement="sid-startevent-request-received">
+            <omgdc:Bounds x="262" y="352" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-task-send-command" bpmnElement="sid-task-send-command">
+            <omgdc:Bounds x="360" y="330" width="100" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-endevent-operator" bpmnElement="sid-endevent-operator">
+            <omgdc:Bounds x="520" y="352" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-startevent-command-received" bpmnElement="sid-startevent-command-received">
+            <omgdc:Bounds x="152" y="602" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-gateway-meter-choice" bpmnElement="sid-gateway-meter-choice" isMarkerVisible="true">
+            <omgdc:Bounds x="250" y="595" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-task-activate" bpmnElement="sid-task-activate">
+            <omgdc:Bounds x="360" y="540" width="100" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-task-deactivate" bpmnElement="sid-task-deactivate">
+            <omgdc:Bounds x="360" y="650" width="100" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-gateway-meter-merge" bpmnElement="sid-gateway-meter-merge" isMarkerVisible="true">
+            <omgdc:Bounds x="510" y="595" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-task-transmit-status" bpmnElement="sid-task-transmit-status">
+            <omgdc:Bounds x="600" y="580" width="100" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-task-enter-logbook" bpmnElement="sid-task-enter-logbook">
+            <omgdc:Bounds x="740" y="580" width="100" height="80"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape-endevent-meter" bpmnElement="sid-endevent-meter">
+            <omgdc:Bounds x="880" y="602" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge-msg-customer-to-operator" bpmnElement="sid-msg-customer-to-operator">
+            <omgdi:waypoint x="410" y="190"/>
+            <omgdi:waypoint x="410" y="260"/>
+            <omgdi:waypoint x="280" y="352"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-msg-operator-to-meter" bpmnElement="sid-msg-operator-to-meter">
+            <omgdi:waypoint x="410" y="410"/>
+            <omgdi:waypoint x="410" y="450"/>
+            <omgdi:waypoint x="170" y="602"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-cust-start-to-gw" bpmnElement="sid-seq-cust-start-to-gw">
+            <omgdi:waypoint x="186" y="150"/>
+            <omgdi:waypoint x="250" y="150"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-cust-gw-to-activate" bpmnElement="sid-seq-cust-gw-to-activate">
+            <omgdi:waypoint x="275" y="125"/>
+            <omgdi:waypoint x="275" y="80"/>
+            <omgdi:waypoint x="410" y="80"/>
+            <omgdi:waypoint x="410" y="110"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-cust-gw-to-deactivate" bpmnElement="sid-seq-cust-gw-to-deactivate">
+            <omgdi:waypoint x="275" y="175"/>
+            <omgdi:waypoint x="275" y="220"/>
+            <omgdi:waypoint x="410" y="220"/>
+            <omgdi:waypoint x="410" y="190"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-cust-task-to-end" bpmnElement="sid-seq-cust-task-to-end">
+            <omgdi:waypoint x="460" y="150"/>
+            <omgdi:waypoint x="520" y="150"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-op-start-to-task" bpmnElement="sid-seq-op-start-to-task">
+            <omgdi:waypoint x="298" y="370"/>
+            <omgdi:waypoint x="360" y="370"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-op-task-to-end" bpmnElement="sid-seq-op-task-to-end">
+            <omgdi:waypoint x="460" y="370"/>
+            <omgdi:waypoint x="520" y="370"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-meter-start-to-gw" bpmnElement="sid-seq-meter-start-to-gw">
+            <omgdi:waypoint x="188" y="620"/>
+            <omgdi:waypoint x="250" y="620"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-meter-gw-to-activate" bpmnElement="sid-seq-meter-gw-to-activate">
+            <omgdi:waypoint x="275" y="595"/>
+            <omgdi:waypoint x="275" y="580"/>
+            <omgdi:waypoint x="360" y="580"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-meter-gw-to-deactivate" bpmnElement="sid-seq-meter-gw-to-deactivate">
+            <omgdi:waypoint x="275" y="645"/>
+            <omgdi:waypoint x="275" y="690"/>
+            <omgdi:waypoint x="360" y="690"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-meter-activate-to-merge" bpmnElement="sid-seq-meter-activate-to-merge">
+            <omgdi:waypoint x="460" y="580"/>
+            <omgdi:waypoint x="535" y="580"/>
+            <omgdi:waypoint x="535" y="595"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-meter-deactivate-to-merge" bpmnElement="sid-seq-meter-deactivate-to-merge">
+            <omgdi:waypoint x="460" y="690"/>
+            <omgdi:waypoint x="535" y="690"/>
+            <omgdi:waypoint x="535" y="645"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-meter-merge-to-transmit" bpmnElement="sid-seq-meter-merge-to-transmit">
+            <omgdi:waypoint x="560" y="620"/>
+            <omgdi:waypoint x="600" y="620"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-meter-transmit-to-log" bpmnElement="sid-seq-meter-transmit-to-log">
+            <omgdi:waypoint x="700" y="620"/>
+            <omgdi:waypoint x="740" y="620"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge-seq-meter-log-to-end" bpmnElement="sid-seq-meter-log-to-end">
+            <omgdi:waypoint x="840" y="620"/>
+            <omgdi:waypoint x="880" y="620"/>
+         </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+   </bpmndi:BPMNDiagram>
+</definitions>

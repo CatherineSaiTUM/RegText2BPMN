@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:signavio="http://www.signavio.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" exporter="Gemini 2.5 Pro" id="sid-exchange-health-data" targetNamespace="http://www.signavio.com" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd">
+   <collaboration id="sid-collaboration-1">
+      <participant id="sid-participant-applicant" name="Applicant / Representative" processRef="sid-process-applicant"/>
+      <participant id="sid-participant-transferring" name="Transferring Member State" processRef="sid-process-transferring"/>
+      <participant id="sid-participant-responsible" name="Member State Responsible" processRef="sid-process-responsible"/>
+      <participant id="sid-participant-commission" name="The Commission" processRef="sid-process-commission"/>
+      <messageFlow id="sid-messageflow-consent" name="Consent" sourceRef="sid-task-give-consent" targetRef="sid-startevent-consent-received"/>
+      <messageFlow id="sid-messageflow-health-data" name="Common Health Certificate" sourceRef="sid-task-transmit-info" targetRef="sid-startevent-cert-received"/>
+   </collaboration>
+   <process id="sid-process-applicant" isExecutable="false" name="Applicant Process">
+      <startEvent id="sid-startevent-applicant-start" name="Start"/>
+      <task id="sid-task-give-consent" name="Give explicit consent"/>
+      <endEvent id="sid-endevent-applicant-end" name="End"/>
+      <sequenceFlow id="sid-seqflow-app-1" sourceRef="sid-startevent-applicant-start" targetRef="sid-task-give-consent"/>
+      <sequenceFlow id="sid-seqflow-app-2" sourceRef="sid-task-give-consent" targetRef="sid-endevent-applicant-end"/>
+   </process>
+   <process id="sid-process-transferring" isExecutable="false" name="Transferring MS Process">
+      <laneSet id="sid-laneset-transferring">
+         <lane id="sid-lane-health-prof-1" name="Health Professional">
+            <flowNodeRef>sid-task-process-data-transferring</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="sid-startevent-consent-received" name="Consent Received">
+         <messageEventDefinition id="sid-msgdef-consent"/>
+      </startEvent>
+      <task id="sid-task-process-data-transferring" name="Process personal health data"/>
+      <task id="sid-task-transmit-info" name="Transmit information in common health certificate"/>
+      <endEvent id="sid-endevent-transferring-end" name="End"/>
+      <sequenceFlow id="sid-seqflow-trans-1" sourceRef="sid-startevent-consent-received" targetRef="sid-task-process-data-transferring"/>
+      <sequenceFlow id="sid-seqflow-trans-2" sourceRef="sid-task-process-data-transferring" targetRef="sid-task-transmit-info"/>
+      <sequenceFlow id="sid-seqflow-trans-3" sourceRef="sid-task-transmit-info" targetRef="sid-endevent-transferring-end"/>
+   </process>
+   <process id="sid-process-responsible" isExecutable="false" name="Responsible MS Process">
+      <laneSet id="sid-laneset-responsible">
+         <lane id="sid-lane-health-prof-2" name="Health Professional">
+            <flowNodeRef>sid-task-process-data-responsible</flowNodeRef>
+         </lane>
+      </laneSet>
+      <startEvent id="sid-startevent-cert-received" name="Health Certificate Received">
+         <messageEventDefinition id="sid-msgdef-cert"/>
+      </startEvent>
+      <task id="sid-task-process-data-responsible" name="Process received health data"/>
+      <task id="sid-task-ensure-needs" name="Ensure special needs are adequately addressed"/>
+      <endEvent id="sid-endevent-responsible-end" name="End"/>
+      <sequenceFlow id="sid-seqflow-resp-1" sourceRef="sid-startevent-cert-received" targetRef="sid-task-process-data-responsible"/>
+      <sequenceFlow id="sid-seqflow-resp-2" sourceRef="sid-task-process-data-responsible" targetRef="sid-task-ensure-needs"/>
+      <sequenceFlow id="sid-seqflow-resp-3" sourceRef="sid-task-ensure-needs" targetRef="sid-endevent-responsible-end"/>
+   </process>
+   <process id="sid-process-commission" isExecutable="false" name="Commission Process">
+      <startEvent id="sid-startevent-commission-start" name="Start"/>
+      <parallelGateway id="sid-gateway-fork" gatewayDirection="Diverging"/>
+      <task id="sid-task-draw-up-cert" name="Draw up the common health certificate"/>
+      <task id="sid-task-adopt-conditions" name="Adopt uniform conditions for exchanging information"/>
+      <parallelGateway id="sid-gateway-join" gatewayDirection="Converging"/>
+      <endEvent id="sid-endevent-commission-end" name="End"/>
+      <sequenceFlow id="sid-seqflow-comm-1" sourceRef="sid-startevent-commission-start" targetRef="sid-gateway-fork"/>
+      <sequenceFlow id="sid-seqflow-comm-2" sourceRef="sid-gateway-fork" targetRef="sid-task-draw-up-cert"/>
+      <sequenceFlow id="sid-seqflow-comm-3" sourceRef="sid-gateway-fork" targetRef="sid-task-adopt-conditions"/>
+      <sequenceFlow id="sid-seqflow-comm-4" sourceRef="sid-task-draw-up-cert" targetRef="sid-gateway-join"/>
+      <sequenceFlow id="sid-seqflow-comm-5" sourceRef="sid-task-adopt-conditions" targetRef="sid-gateway-join"/>
+      <sequenceFlow id="sid-seqflow-comm-6" sourceRef="sid-gateway-join" targetRef="sid-endevent-commission-end"/>
+   </process>
+   <bpmndi:BPMNDiagram id="sid-bpmn-diagram">
+      <bpmndi:BPMNPlane id="sid-bpmn-plane" bpmnElement="sid-collaboration-1">
+         <bpmndi:BPMNShape id="sid-shape-participant-applicant" bpmnElement="sid-participant-applicant" isHorizontal="true">
+            <omgdc:Bounds x="160" y="80" width="800" height="120"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-participant-transferring" bpmnElement="sid-participant-transferring" isHorizontal="true">
+            <omgdc:Bounds x="160" y="220" width="800" height="180"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-participant-responsible" bpmnElement="sid-participant-responsible" isHorizontal="true">
+            <omgdc:Bounds x="160" y="420" width="800" height="180"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-participant-commission" bpmnElement="sid-participant-commission" isHorizontal="true">
+            <omgdc:Bounds x="160" y="620" width="800" height="150"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-lane-health-prof-1" bpmnElement="sid-lane-health-prof-1" isHorizontal="true">
+            <omgdc:Bounds x="190" y="220" width="770" height="180"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-lane-health-prof-2" bpmnElement="sid-lane-health-prof-2" isHorizontal="true">
+            <omgdc:Bounds x="190" y="420" width="770" height="180"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-startevent-applicant-start" bpmnElement="sid-startevent-applicant-start">
+            <omgdc:Bounds x="240" y="125" width="30" height="30"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-task-give-consent" bpmnElement="sid-task-give-consent">
+            <omgdc:Bounds x="350" y="110" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-endevent-applicant-end" bpmnElement="sid-endevent-applicant-end">
+            <omgdc:Bounds x="530" y="126" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-startevent-consent-received" bpmnElement="sid-startevent-consent-received">
+            <omgdc:Bounds x="240" y="295" width="30" height="30"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-task-process-data-transferring" bpmnElement="sid-task-process-data-transferring">
+            <omgdc:Bounds x="350" y="280" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-task-transmit-info" bpmnElement="sid-task-transmit-info">
+            <omgdc:Bounds x="530" y="280" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-endevent-transferring-end" bpmnElement="sid-endevent-transferring-end">
+            <omgdc:Bounds x="710" y="296" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-startevent-cert-received" bpmnElement="sid-startevent-cert-received">
+            <omgdc:Bounds x="240" y="495" width="30" height="30"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-task-process-data-responsible" bpmnElement="sid-task-process-data-responsible">
+            <omgdc:Bounds x="350" y="480" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-task-ensure-needs" bpmnElement="sid-task-ensure-needs">
+            <omgdc:Bounds x="530" y="480" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-endevent-responsible-end" bpmnElement="sid-endevent-responsible-end">
+            <omgdc:Bounds x="710" y="496" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-startevent-commission-start" bpmnElement="sid-startevent-commission-start">
+            <omgdc:Bounds x="240" y="680" width="30" height="30"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-gateway-fork" bpmnElement="sid-gateway-fork">
+            <omgdc:Bounds x="310" y="670" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-task-draw-up-cert" bpmnElement="sid-task-draw-up-cert">
+            <omgdc:Bounds x="400" y="635" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-task-adopt-conditions" bpmnElement="sid-task-adopt-conditions">
+            <omgdc:Bounds x="400" y="715" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-gateway-join" bpmnElement="sid-gateway-join">
+            <omgdc:Bounds x="540" y="670" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="sid-shape-endevent-commission-end" bpmnElement="sid-endevent-commission-end">
+            <omgdc:Bounds x="630" y="681" width="28" height="28"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-app-1" bpmnElement="sid-seqflow-app-1">
+            <omgdi:waypoint x="270" y="140"/>
+            <omgdi:waypoint x="350" y="140"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-app-2" bpmnElement="sid-seqflow-app-2">
+            <omgdi:waypoint x="450" y="140"/>
+            <omgdi:waypoint x="530" y="140"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-messageflow-consent" bpmnElement="sid-messageflow-consent">
+            <omgdi:waypoint x="400" y="170"/>
+            <omgdi:waypoint x="400" y="250"/>
+            <omgdi:waypoint x="255" y="250"/>
+            <omgdi:waypoint x="255" y="295"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-trans-1" bpmnElement="sid-seqflow-trans-1">
+            <omgdi:waypoint x="270" y="310"/>
+            <omgdi:waypoint x="350" y="310"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-trans-2" bpmnElement="sid-seqflow-trans-2">
+            <omgdi:waypoint x="450" y="310"/>
+            <omgdi:waypoint x="530" y="310"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-trans-3" bpmnElement="sid-seqflow-trans-3">
+            <omgdi:waypoint x="630" y="310"/>
+            <omgdi:waypoint x="710" y="310"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-messageflow-health-data" bpmnElement="sid-messageflow-health-data">
+            <omgdi:waypoint x="580" y="340"/>
+            <omgdi:waypoint x="580" y="450"/>
+            <omgdi:waypoint x="255" y="450"/>
+            <omgdi:waypoint x="255" y="495"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-resp-1" bpmnElement="sid-seqflow-resp-1">
+            <omgdi:waypoint x="270" y="510"/>
+            <omgdi:waypoint x="350" y="510"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-resp-2" bpmnElement="sid-seqflow-resp-2">
+            <omgdi:waypoint x="450" y="510"/>
+            <omgdi:waypoint x="530" y="510"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-resp-3" bpmnElement="sid-seqflow-resp-3">
+            <omgdi:waypoint x="630" y="510"/>
+            <omgdi:waypoint x="710" y="510"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-comm-1" bpmnElement="sid-seqflow-comm-1">
+            <omgdi:waypoint x="270" y="695"/>
+            <omgdi:waypoint x="310" y="695"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-comm-2" bpmnElement="sid-seqflow-comm-2">
+            <omgdi:waypoint x="335" y="670"/>
+            <omgdi:waypoint x="335" y="665"/>
+            <omgdi:waypoint x="400" y="665"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-comm-3" bpmnElement="sid-seqflow-comm-3">
+            <omgdi:waypoint x="335" y="720"/>
+            <omgdi:waypoint x="335" y="745"/>
+            <omgdi:waypoint x="400" y="745"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-comm-4" bpmnElement="sid-seqflow-comm-4">
+            <omgdi:waypoint x="500" y="665"/>
+            <omgdi:waypoint x="565" y="665"/>
+            <omgdi:waypoint x="565" y="670"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-comm-5" bpmnElement="sid-seqflow-comm-5">
+            <omgdi:waypoint x="500" y="745"/>
+            <omgdi:waypoint x="565" y="745"/>
+            <omgdi:waypoint x="565" y="720"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="sid-edge-seqflow-comm-6" bpmnElement="sid-seqflow-comm-6">
+            <omgdi:waypoint x="590" y="695"/>
+            <omgdi:waypoint x="630" y="695"/>
+         </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+   </bpmndi:BPMNDiagram>
+</definitions>

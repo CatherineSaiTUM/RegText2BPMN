@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://www.signavio.com" exporter="Gemini AI" exporterVersion="1.0">
+   <collaboration id="collab_gdpr_breach_notification">
+      <participant id="actor_processor" name="Processor" processRef="process_processor"/>
+      <participant id="actor_controller" name="Controller" processRef="process_controller"/>
+      <participant id="actor_supervisory_authority" name="Supervisory Authority" processRef="process_supervisory_authority"/>
+      <participant id="actor_data_subject" name="Data Subject"/>
+      <messageFlow id="flow_proc_to_ctrl" sourceRef="task_notify_controller" targetRef="start_breach_occurs"/>
+      <messageFlow id="flow_ctrl_to_sa" sourceRef="task_notify_sa" targetRef="start_receive_notification"/>
+      <messageFlow id="flow_ctrl_to_ds" sourceRef="task_communicate_to_ds" targetRef="actor_data_subject"/>
+      <messageFlow id="flow_ctrl_public_comm" sourceRef="task_public_communication" targetRef="actor_data_subject"/>
+      <messageFlow id="flow_sa_to_ctrl" sourceRef="task_require_communication" targetRef="task_communicate_to_ds"/>
+   </collaboration>
+   <process id="process_processor" isExecutable="false">
+      <startEvent id="start_processor_aware" name="Becomes aware of breach"/>
+      <task id="task_notify_controller" name="Notify the controller"/>
+      <endEvent id="end_processor"/>
+      <sequenceFlow id="seq_proc_1" sourceRef="start_processor_aware" targetRef="task_notify_controller"/>
+      <sequenceFlow id="seq_proc_2" sourceRef="task_notify_controller" targetRef="end_processor"/>
+   </process>
+   <process id="process_controller" isExecutable="false">
+      <startEvent id="start_breach_occurs" name="Personal data breach occurs">
+         <messageEventDefinition/>
+      </startEvent>
+      <task id="task_document_breach" name="Document personal data breach"/>
+      <exclusiveGateway id="gw_risk_check" name="Risk to rights and freedoms likely?"/>
+      <task id="task_notify_sa" name="Notify the supervisory authority"/>
+      <exclusiveGateway id="gw_high_risk_check" name="High risk to rights and freedoms?"/>
+      <exclusiveGateway id="gw_exemption_check" name="Exemption condition met? (Art. 34.3)"/>
+      <task id="task_communicate_to_ds" name="Communicate breach to the data subject"/>
+      <exclusiveGateway id="gw_effort_check" name="Disproportionate effort?"/>
+      <task id="task_public_communication" name="Make public communication"/>
+      <endEvent id="end_controller_1"/>
+      <endEvent id="end_controller_2"/>
+      <endEvent id="end_controller_3"/>
+      <endEvent id="end_controller_4"/>
+      <sequenceFlow id="seq_ctrl_1" sourceRef="start_breach_occurs" targetRef="task_document_breach"/>
+      <sequenceFlow id="seq_ctrl_2" sourceRef="task_document_breach" targetRef="gw_risk_check"/>
+      <sequenceFlow id="seq_ctrl_3" sourceRef="gw_risk_check" targetRef="task_notify_sa" name="Yes"/>
+      <sequenceFlow id="seq_ctrl_4" sourceRef="task_notify_sa" targetRef="gw_high_risk_check"/>
+      <sequenceFlow id="seq_ctrl_5" sourceRef="gw_risk_check" targetRef="gw_high_risk_check" name="No"/>
+      <sequenceFlow id="seq_ctrl_6" sourceRef="gw_high_risk_check" targetRef="end_controller_1" name="No"/>
+      <sequenceFlow id="seq_ctrl_7" sourceRef="gw_high_risk_check" targetRef="gw_exemption_check" name="Yes"/>
+      <sequenceFlow id="seq_ctrl_8" sourceRef="gw_exemption_check" targetRef="task_communicate_to_ds" name="No"/>
+      <sequenceFlow id="seq_ctrl_9" sourceRef="task_communicate_to_ds" targetRef="end_controller_2"/>
+      <sequenceFlow id="seq_ctrl_10" sourceRef="gw_exemption_check" targetRef="gw_effort_check" name="Yes"/>
+      <sequenceFlow id="seq_ctrl_11" sourceRef="gw_effort_check" targetRef="end_controller_3" name="No"/>
+      <sequenceFlow id="seq_ctrl_12" sourceRef="gw_effort_check" targetRef="task_public_communication" name="Yes"/>
+      <sequenceFlow id="seq_ctrl_13" sourceRef="task_public_communication" targetRef="end_controller_4"/>
+   </process>
+   <process id="process_supervisory_authority" isExecutable="false">
+      <startEvent id="start_receive_notification" name="Receive notification">
+         <messageEventDefinition/>
+      </startEvent>
+      <task id="task_verify_compliance" name="Verify compliance"/>
+      <task id="task_consider_risk" name="Consider likelihood of high risk"/>
+      <exclusiveGateway id="gw_require_comm_check" name="Require communication?"/>
+      <task id="task_require_communication" name="Require controller to communicate"/>
+      <task id="task_decide_conditions_met" name="Decide exemption conditions are met"/>
+      <endEvent id="end_sa_1"/>
+      <endEvent id="end_sa_2"/>
+      <endEvent id="end_sa_3"/>
+      <sequenceFlow id="seq_sa_1" sourceRef="start_receive_notification" targetRef="task_verify_compliance"/>
+      <sequenceFlow id="seq_sa_2" sourceRef="task_verify_compliance" targetRef="task_consider_risk"/>
+      <sequenceFlow id="seq_sa_3" sourceRef="task_consider_risk" targetRef="gw_require_comm_check"/>
+      <sequenceFlow id="seq_sa_4" sourceRef="gw_require_comm_check" targetRef="task_require_communication" name="Yes"/>
+      <sequenceFlow id="seq_sa_5" sourceRef="gw_require_comm_check" targetRef="task_decide_conditions_met" name="No"/>
+      <sequenceFlow id="seq_sa_6" sourceRef="task_require_communication" targetRef="end_sa_1"/>
+      <sequenceFlow id="seq_sa_7" sourceRef="task_decide_conditions_met" targetRef="end_sa_2"/>
+      <sequenceFlow id="seq_sa_8" sourceRef="task_verify_compliance" targetRef="end_sa_3"/>
+   </process>
+   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+      <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="collab_gdpr_breach_notification">
+         <bpmndi:BPMNShape id="shape_processor" bpmnElement="actor_processor" isHorizontal="true">
+            <omgdc:Bounds x="160" y="80" width="1200" height="150"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_controller" bpmnElement="actor_controller" isHorizontal="true">
+            <omgdc:Bounds x="160" y="230" width="1200" height="300"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_sa" bpmnElement="actor_supervisory_authority" isHorizontal="true">
+            <omgdc:Bounds x="160" y="530" width="1200" height="200"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_ds" bpmnElement="actor_data_subject" isHorizontal="true">
+            <omgdc:Bounds x="160" y="730" width="1200" height="120"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_start_processor" bpmnElement="start_processor_aware">
+            <omgdc:Bounds x="200" y="132" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_notify_controller" bpmnElement="task_notify_controller">
+            <omgdc:Bounds x="280" y="120" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_processor" bpmnElement="end_processor">
+            <omgdc:Bounds x="420" y="132" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge_seq_proc_1" bpmnElement="seq_proc_1">
+            <omgdi:waypoint x="236" y="150"/>
+            <omgdi:waypoint x="280" y="150"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_proc_2" bpmnElement="seq_proc_2">
+            <omgdi:waypoint x="380" y="150"/>
+            <omgdi:waypoint x="420" y="150"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape id="shape_start_breach" bpmnElement="start_breach_occurs">
+            <omgdc:Bounds x="200" y="362" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_doc_breach" bpmnElement="task_document_breach">
+            <omgdc:Bounds x="280" y="350" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gw_risk_check" bpmnElement="gw_risk_check">
+            <omgdc:Bounds x="420" y="355" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_notify_sa" bpmnElement="task_notify_sa">
+            <omgdc:Bounds x="510" y="280" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gw_high_risk_check" bpmnElement="gw_high_risk_check">
+            <omgdc:Bounds x="535" y="445" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gw_exemption_check" bpmnElement="gw_exemption_check">
+            <omgdc:Bounds x="650" y="445" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_communicate_ds" bpmnElement="task_communicate_to_ds">
+            <omgdc:Bounds x="740" y="350" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gw_effort_check" bpmnElement="gw_effort_check">
+            <omgdc:Bounds x="765" y="445" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_public_comm" bpmnElement="task_public_communication">
+            <omgdc:Bounds x="880" y="440" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_ctrl_1" bpmnElement="end_controller_1">
+            <omgdc:Bounds x="662" y="362" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_ctrl_2" bpmnElement="end_controller_2">
+            <omgdc:Bounds x="880" y="362" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_ctrl_3" bpmnElement="end_controller_3">
+            <omgdc:Bounds x="880" y="292" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_ctrl_4" bpmnElement="end_controller_4">
+            <omgdc:Bounds x="1020" y="452" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_1" bpmnElement="seq_ctrl_1">
+            <omgdi:waypoint x="236" y="380"/>
+            <omgdi:waypoint x="280" y="380"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_2" bpmnElement="seq_ctrl_2">
+            <omgdi:waypoint x="380" y="380"/>
+            <omgdi:waypoint x="420" y="380"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_3" bpmnElement="seq_ctrl_3">
+            <omgdi:waypoint x="445" y="355"/>
+            <omgdi:waypoint x="445" y="310"/>
+            <omgdi:waypoint x="510" y="310"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_4" bpmnElement="seq_ctrl_4">
+            <omgdi:waypoint x="560" y="340"/>
+            <omgdi:waypoint x="560" y="445"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_5" bpmnElement="seq_ctrl_5">
+            <omgdi:waypoint x="445" y="405"/>
+            <omgdi:waypoint x="445" y="470"/>
+            <omgdi:waypoint x="535" y="470"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_6" bpmnElement="seq_ctrl_6">
+            <omgdi:waypoint x="560" y="445"/>
+            <omgdi:waypoint x="560" y="380"/>
+            <omgdi:waypoint x="662" y="380"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_7" bpmnElement="seq_ctrl_7">
+            <omgdi:waypoint x="585" y="470"/>
+            <omgdi:waypoint x="650" y="470"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_8" bpmnElement="seq_ctrl_8">
+            <omgdi:waypoint x="675" y="445"/>
+            <omgdi:waypoint x="675" y="380"/>
+            <omgdi:waypoint x="740" y="380"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_9" bpmnElement="seq_ctrl_9">
+            <omgdi:waypoint x="840" y="380"/>
+            <omgdi:waypoint x="880" y="380"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_10" bpmnElement="seq_ctrl_10">
+            <omgdi:waypoint x="700" y="470"/>
+            <omgdi:waypoint x="765" y="470"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_11" bpmnElement="seq_ctrl_11">
+            <omgdi:waypoint x="790" y="445"/>
+            <omgdi:waypoint x="790" y="310"/>
+            <omgdi:waypoint x="880" y="310"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_12" bpmnElement="seq_ctrl_12">
+            <omgdi:waypoint x="815" y="470"/>
+            <omgdi:waypoint x="880" y="470"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_ctrl_13" bpmnElement="seq_ctrl_13">
+            <omgdi:waypoint x="980" y="470"/>
+            <omgdi:waypoint x="1020" y="470"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNShape id="shape_start_sa" bpmnElement="start_receive_notification">
+            <omgdc:Bounds x="542" y="592" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_verify" bpmnElement="task_verify_compliance">
+            <omgdc:Bounds x="620" y="580" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_consider" bpmnElement="task_consider_risk">
+            <omgdc:Bounds x="760" y="580" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_gw_req_comm" bpmnElement="gw_require_comm_check">
+            <omgdc:Bounds x="900" y="585" width="50" height="50"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_require" bpmnElement="task_require_communication">
+            <omgdc:Bounds x="990" y="580" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_task_decide" bpmnElement="task_decide_conditions_met">
+            <omgdc:Bounds x="990" y="650" width="100" height="60"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_sa_1" bpmnElement="end_sa_1">
+            <omgdc:Bounds x="1130" y="592" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_sa_2" bpmnElement="end_sa_2">
+            <omgdc:Bounds x="1130" y="662" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNShape id="shape_end_sa_3" bpmnElement="end_sa_3">
+            <omgdc:Bounds x="750" y="650" width="36" height="36"/>
+         </bpmndi:BPMNShape>
+         <bpmndi:BPMNEdge id="edge_seq_sa_1" bpmnElement="seq_sa_1">
+            <omgdi:waypoint x="578" y="610"/>
+            <omgdi:waypoint x="620" y="610"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_sa_2" bpmnElement="seq_sa_2">
+            <omgdi:waypoint x="720" y="610"/>
+            <omgdi:waypoint x="760" y="610"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_sa_3" bpmnElement="seq_sa_3">
+            <omgdi:waypoint x="860" y="610"/>
+            <omgdi:waypoint x="900" y="610"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_sa_4" bpmnElement="seq_sa_4">
+            <omgdi:waypoint x="950" y="610"/>
+            <omgdi:waypoint x="990" y="610"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_sa_5" bpmnElement="seq_sa_5">
+            <omgdi:waypoint x="925" y="635"/>
+            <omgdi:waypoint x="925" y="680"/>
+            <omgdi:waypoint x="990" y="680"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_sa_6" bpmnElement="seq_sa_6">
+            <omgdi:waypoint x="1090" y="610"/>
+            <omgdi:waypoint x="1130" y="610"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_sa_7" bpmnElement="seq_sa_7">
+            <omgdi:waypoint x="1090" y="680"/>
+            <omgdi:waypoint x="1130" y="680"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_seq_sa_8" bpmnElement="seq_sa_8">
+            <omgdi:waypoint x="670" y="640"/>
+            <omgdi:waypoint x="670" y="668"/>
+            <omgdi:waypoint x="750" y="668"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_flow_proc_to_ctrl" bpmnElement="flow_proc_to_ctrl">
+            <omgdi:waypoint x="330" y="180"/>
+            <omgdi:waypoint x="330" y="290"/>
+            <omgdi:waypoint x="218" y="290"/>
+            <omgdi:waypoint x="218" y="362"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_flow_ctrl_to_sa" bpmnElement="flow_ctrl_to_sa">
+            <omgdi:waypoint x="560" y="340"/>
+            <omgdi:waypoint x="560" y="592"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_flow_ctrl_to_ds" bpmnElement="flow_ctrl_to_ds">
+            <omgdi:waypoint x="790" y="410"/>
+            <omgdi:waypoint x="790" y="730"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_flow_ctrl_public_comm" bpmnElement="flow_ctrl_public_comm">
+            <omgdi:waypoint x="930" y="500"/>
+            <omgdi:waypoint x="930" y="730"/>
+         </bpmndi:BPMNEdge>
+         <bpmndi:BPMNEdge id="edge_flow_sa_to_ctrl" bpmnElement="flow_sa_to_ctrl">
+            <omgdi:waypoint x="1040" y="580"/>
+            <omgdi:waypoint x="1040" y="380"/>
+            <omgdi:waypoint x="840" y="380"/>
+         </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+   </bpmndi:BPMNDiagram>
+</definitions>

@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Customer" name="Customer" processRef="Process_Customer" />
+    <bpmn:participant id="Participant_ObligedEntity" name="Obliged Entity" processRef="Process_ObligedEntity" />
+    <bpmn:participant id="Participant_FIU" name="FIU" processRef="Process_FIU" />
+    <bpmn:messageFlow id="MessageFlow_CustomerToOE" sourceRef="Task_RequestRelationship" targetRef="StartEvent_RequestReceived" />
+    <bpmn:messageFlow id="MessageFlow_OEToFIU" sourceRef="Task_SendReport" targetRef="StartEvent_ReportReceived" />
+  </bpmn:collaboration>
+  
+  <bpmn:process id="Process_Customer" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Customer" name="Wants to start relationship">
+      <bpmn:outgoing>Flow_Customer_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_RequestRelationship" name="Request business relationship">
+      <bpmn:incoming>Flow_Customer_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_Customer_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_Customer" name="Request sent">
+      <bpmn:incoming>Flow_Customer_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Customer_1" sourceRef="StartEvent_Customer" targetRef="Task_RequestRelationship" />
+    <bpmn:sequenceFlow id="Flow_Customer_2" sourceRef="Task_RequestRelationship" targetRef="EndEvent_Customer" />
+  </bpmn:process>
+  
+  <bpmn:process id="Process_FIU" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_ReportReceived" name="Suspicious Transaction Report Received">
+      <bpmn:outgoing>Flow_FIU_1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_FIU" />
+    </bpmn:startEvent>
+    <bpmn:task id="Task_ProcessReport" name="Process Report">
+      <bpmn:incoming>Flow_FIU_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_FIU_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_FIU" name="Report Processed">
+      <bpmn:incoming>Flow_FIU_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_FIU_1" sourceRef="StartEvent_ReportReceived" targetRef="Task_ProcessReport" />
+    <bpmn:sequenceFlow id="Flow_FIU_2" sourceRef="Task_ProcessReport" targetRef="EndEvent_FIU" />
+  </bpmn:process>
+  
+  <bpmn:process id="Process_ObligedEntity" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_RequestReceived" name="Business relationship requested">
+      <bpmn:outgoing>Flow_OE_1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_OE" />
+    </bpmn:startEvent>
+    
+    <!-- CORRECTED: Start Event for existing customers -->
+    <bpmn:startEvent id="Start_ReviewTimer" name="Customer Review Triggered">
+      <bpmn:outgoing>Flow_ToReviewTask</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_1" />
+    </bpmn:startEvent>
+    
+    <bpmn:task id="Task_ReviewExistingCustomer" name="Apply customer due diligence measures">
+      <bpmn:incoming>Flow_ToReviewTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromReview</bpmn:outgoing>
+    </bpmn:task>
+    
+    <bpmn:exclusiveGateway id="Gateway_JoinBeforeDerogation">
+      <bpmn:incoming>Flow_OE_1</bpmn:incoming>
+      <bpmn:incoming>Flow_FromReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_JoinToDerogation</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <bpmn:exclusiveGateway id="Gateway_DerogationCheck" name="Derogation possible?">
+      <bpmn:incoming>Flow_JoinToDerogation</bpmn:incoming>
+      <bpmn:outgoing>Flow_DefaultPath</bpmn:outgoing>
+      <bpmn:outgoing>Flow_DerogationPath</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <bpmn:sequenceFlow id="Flow_OE_1" sourceRef="StartEvent_RequestReceived" targetRef="Gateway_JoinBeforeDerogation" />
+    <bpmn:sequenceFlow id="Flow_ToReviewTask" sourceRef="Start_ReviewTimer" targetRef="Task_ReviewExistingCustomer" />
+    <bpmn:sequenceFlow id="Flow_FromReview" sourceRef="Task_ReviewExistingCustomer" targetRef="Gateway_JoinBeforeDerogation" />
+    <bpmn:sequenceFlow id="Flow_JoinToDerogation" sourceRef="Gateway_JoinBeforeDerogation" targetRef="Gateway_DerogationCheck" />
+    
+    <!-- Default Path -->
+    <bpmn:sequenceFlow id="Flow_DefaultPath" name="No" sourceRef="Gateway_DerogationCheck" targetRef="Task_VerifyIdentityBefore" />
+    <bpmn:task id="Task_VerifyIdentityBefore" name="Verify identity of customer and beneficial owner">
+      <bpmn:incoming>Flow_DefaultPath</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToVerificationResult1</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_VerificationResult1" name="Verification successful?">
+      <bpmn:incoming>Flow_ToVerificationResult1</bpmn:incoming>
+      <bpmn:outgoing>Flow_VerificationSuccess1</bpmn:outgoing>
+      <bpmn:outgoing>Flow_VerificationFailure1</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ToVerificationResult1" sourceRef="Task_VerifyIdentityBefore" targetRef="Gateway_VerificationResult1" />
+    <bpmn:sequenceFlow id="Flow_VerificationSuccess1" name="Yes" sourceRef="Gateway_VerificationResult1" targetRef="Task_EstablishRelationship" />
+    <bpmn:task id="Task_EstablishRelationship" name="Establish business relationship or carry out transaction">
+      <bpmn:incoming>Flow_VerificationSuccess1</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEndSuccess1</bpmn:outgoing>
+    </bpmn:task>
+    
+    <!-- Derogation Path -->
+    <bpmn:sequenceFlow id="Flow_DerogationPath" name="Yes" sourceRef="Gateway_DerogationCheck" targetRef="Task_StartRelationshipConditionally" />
+    <bpmn:task id="Task_StartRelationshipConditionally" name="Establish relationship or open account with safeguards">
+      <bpmn:incoming>Flow_DerogationPath</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToVerifyAfter</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_VerifyIdentityAfter" name="Complete verification of identity">
+      <bpmn:incoming>Flow_ToVerifyAfter</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToVerificationResult2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_VerificationResult2" name="Verification successful?">
+      <bpmn:incoming>Flow_ToVerificationResult2</bpmn:incoming>
+      <bpmn:outgoing>Flow_VerificationSuccess2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_VerificationFailure2</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ToVerifyAfter" sourceRef="Task_StartRelationshipConditionally" targetRef="Task_VerifyIdentityAfter" />
+    <bpmn:sequenceFlow id="Flow_ToVerificationResult2" sourceRef="Task_VerifyIdentityAfter" targetRef="Gateway_VerificationResult2" />
+    <bpmn:sequenceFlow id="Flow_VerificationSuccess2" name="Yes" sourceRef="Gateway_VerificationResult2" targetRef="Task_CompleteRelationship" />
+    <bpmn:task id="Task_CompleteRelationship" name="Complete relationship / Lift safeguards">
+      <bpmn:incoming>Flow_VerificationSuccess2</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEndSuccess2</bpmn:outgoing>
+    </bpmn:task>
+    
+    <!-- Success Path -->
+    <bpmn:exclusiveGateway id="Gateway_JoinBeforeSuccess">
+        <bpmn:incoming>Flow_ToEndSuccess1</bpmn:incoming>
+        <bpmn:incoming>Flow_ToEndSuccess2</bpmn:incoming>
+        <bpmn:outgoing>Flow_JoinToEndSuccess</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_Success" name="Process completed successfully">
+      <bpmn:incoming>Flow_JoinToEndSuccess</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToEndSuccess1" sourceRef="Task_EstablishRelationship" targetRef="Gateway_JoinBeforeSuccess" />
+    <bpmn:sequenceFlow id="Flow_ToEndSuccess2" sourceRef="Task_CompleteRelationship" targetRef="Gateway_JoinBeforeSuccess" />
+    <bpmn:sequenceFlow id="Flow_JoinToEndSuccess" sourceRef="Gateway_JoinBeforeSuccess" targetRef="End_Success" />
+
+    <!-- CORRECTED: Failure Path -->
+    <bpmn:task id="Task_RefuseRelationship" name="Refuse to establish relationship">
+      <bpmn:incoming>Flow_VerificationFailure1</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromRefuseToMerge</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_TerminateRelationship" name="Terminate business relationship">
+      <bpmn:incoming>Flow_VerificationFailure2</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromTerminateToMerge</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_MergeBeforeReportDecision">
+      <bpmn:incoming>Flow_FromRefuseToMerge</bpmn:incoming>
+      <bpmn:incoming>Flow_FromTerminateToMerge</bpmn:incoming>
+      <bpmn:outgoing>Flow_MergedFailureToReportDecision</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_VerificationFailure1" name="No" sourceRef="Gateway_VerificationResult1" targetRef="Task_RefuseRelationship" />
+    <bpmn:sequenceFlow id="Flow_VerificationFailure2" name="No" sourceRef="Gateway_VerificationResult2" targetRef="Task_TerminateRelationship" />
+    <bpmn:sequenceFlow id="Flow_FromRefuseToMerge" sourceRef="Task_RefuseRelationship" targetRef="Gateway_MergeBeforeReportDecision" />
+    <bpmn:sequenceFlow id="Flow_FromTerminateToMerge" sourceRef="Task_TerminateRelationship" targetRef="Gateway_MergeBeforeReportDecision" />
+    <bpmn:sequenceFlow id="Flow_MergedFailureToReportDecision" sourceRef="Gateway_MergeBeforeReportDecision" targetRef="Gateway_ReportDecision" />
+    
+    <bpmn:exclusiveGateway id="Gateway_ReportDecision" name="Make STR?">
+      <bpmn:incoming>Flow_MergedFailureToReportDecision</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReportYes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ReportNo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ReportYes" name="Yes" sourceRef="Gateway_ReportDecision" targetRef="Task_SendReport" />
+    <bpmn:sendTask id="Task_SendReport" name="Make suspicious transaction report to FIU">
+      <bpmn:incoming>Flow_ReportYes</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEndReported</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="End_Reported" name="Report sent">
+      <bpmn:incoming>Flow_ToEndReported</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToEndReported" sourceRef="Task_SendReport" targetRef="End_Reported" />
+    <bpmn:sequenceFlow id="Flow_ReportNo" name="No" sourceRef="Gateway_ReportDecision" targetRef="End_Terminated" />
+    <bpmn:endEvent id="End_Terminated" name="Process terminated">
+      <bpmn:incoming>Flow_ReportNo</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Shape_Participant_Customer" bpmnElement="Participant_Customer" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1840" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Participant_ObligedEntity" bpmnElement="Participant_ObligedEntity" isHorizontal="true">
+        <dc:Bounds x="160" y="240" width="1840" height="610" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Participant_FIU" bpmnElement="Participant_FIU" isHorizontal="true">
+        <dc:Bounds x="160" y="860" width="1840" height="150" />
+      </bpmndi:BPMNShape>
+
+      <!-- Customer Pool -->
+      <bpmndi:BPMNShape id="Shape_StartEvent_Customer" bpmnElement="StartEvent_Customer">
+        <dc:Bounds x="220" y="132" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="198" y="175" width="81" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RequestRelationship" bpmnElement="Task_RequestRelationship">
+        <dc:Bounds x="320" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_Customer" bpmnElement="EndEvent_Customer">
+        <dc:Bounds x="482" y="132" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="468" y="175" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Customer_1" bpmnElement="Flow_Customer_1">
+        <di:waypoint x="256" y="150" />
+        <di:waypoint x="320" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Customer_2" bpmnElement="Flow_Customer_2">
+        <di:waypoint x="420" y="150" />
+        <di:waypoint x="482" y="150" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Obliged Entity Pool -->
+      <bpmndi:BPMNShape id="Shape_StartEvent_RequestReceived" bpmnElement="StartEvent_RequestReceived">
+        <dc:Bounds x="242" y="532" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="221" y="575" width="78" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Start_ReviewTimer" bpmnElement="Start_ReviewTimer">
+        <dc:Bounds x="242" y="402" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="218" y="445" width="85" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ReviewExistingCustomer" bpmnElement="Task_ReviewExistingCustomer">
+        <dc:Bounds x="320" y="380" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_JoinBeforeDerogation" bpmnElement="Gateway_JoinBeforeDerogation" isMarkerVisible="true">
+        <dc:Bounds x="345" y="475" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_DerogationCheck" bpmnElement="Gateway_DerogationCheck" isMarkerVisible="true">
+        <dc:Bounds x="445" y="475" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="428" y="445" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_VerifyIdentityBefore" bpmnElement="Task_VerifyIdentityBefore">
+        <dc:Bounds x="560" y="330" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_VerificationResult1" bpmnElement="Gateway_VerificationResult1" isMarkerVisible="true">
+        <dc:Bounds x="725" y="345" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="707" y="315" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_EstablishRelationship" bpmnElement="Task_EstablishRelationship">
+        <dc:Bounds x="840" y="330" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_StartRelationshipConditionally" bpmnElement="Task_StartRelationshipConditionally">
+        <dc:Bounds x="560" y="590" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_VerifyIdentityAfter" bpmnElement="Task_VerifyIdentityAfter">
+        <dc:Bounds x="700" y="590" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_VerificationResult2" bpmnElement="Gateway_VerificationResult2" isMarkerVisible="true">
+        <dc:Bounds x="845" y="605" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="827" y="575" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CompleteRelationship" bpmnElement="Task_CompleteRelationship">
+        <dc:Bounds x="960" y="590" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_JoinBeforeSuccess" bpmnElement="Gateway_JoinBeforeSuccess" isMarkerVisible="true">
+        <dc:Bounds x="1005" y="475" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Success" bpmnElement="End_Success">
+        <dc:Bounds x="1132" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1105" y="525" width="90" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Corrected Failure Path Shapes -->
+      <bpmndi:BPMNShape id="Shape_Task_RefuseRelationship" bpmnElement="Task_RefuseRelationship">
+        <dc:Bounds x="960" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_TerminateRelationship" bpmnElement="Task_TerminateRelationship">
+        <dc:Bounds x="960" y="500" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_MergeBeforeReportDecision" bpmnElement="Gateway_MergeBeforeReportDecision" isMarkerVisible="true">
+        <dc:Bounds x="1150" y="475" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="Shape_Gateway_ReportDecision" bpmnElement="Gateway_ReportDecision" isMarkerVisible="true">
+        <dc:Bounds x="1365" y="475" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1358" y="532" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_SendReport" bpmnElement="Task_SendReport">
+        <dc:Bounds x="1480" y="460" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Reported" bpmnElement="End_Reported">
+        <dc:Bounds x="1642" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1626" y="525" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Terminated" bpmnElement="End_Terminated">
+        <dc:Bounds x="1492" y="612" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1469" y="655" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="Edge_Flow_OE_1" bpmnElement="Flow_OE_1">
+        <di:waypoint x="278" y="550" />
+        <di:waypoint x="370" y="550" />
+        <di:waypoint x="370" y="525" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToReviewTask" bpmnElement="Flow_ToReviewTask">
+        <di:waypoint x="278" y="420" />
+        <di:waypoint x="320" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_FromReview" bpmnElement="Flow_FromReview">
+        <di:waypoint x="370" y="460" />
+        <di:waypoint x="370" y="475" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_JoinToDerogation" bpmnElement="Flow_JoinToDerogation">
+        <di:waypoint x="395" y="500" />
+        <di:waypoint x="445" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_DefaultPath" bpmnElement="Flow_DefaultPath">
+        <di:waypoint x="470" y="475" />
+        <di:waypoint x="470" y="370" />
+        <di:waypoint x="560" y="370" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="478" y="420" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToVerificationResult1" bpmnElement="Flow_ToVerificationResult1">
+        <di:waypoint x="660" y="370" />
+        <di:waypoint x="725" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_VerificationSuccess1" bpmnElement="Flow_VerificationSuccess1">
+        <di:waypoint x="775" y="370" />
+        <di:waypoint x="840" y="370" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="799" y="352" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_DerogationPath" bpmnElement="Flow_DerogationPath">
+        <di:waypoint x="470" y="525" />
+        <di:waypoint x="470" y="630" />
+        <di:waypoint x="560" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="478" y="575" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToVerifyAfter" bpmnElement="Flow_ToVerifyAfter">
+        <di:waypoint x="660" y="630" />
+        <di:waypoint x="700" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToVerificationResult2" bpmnElement="Flow_ToVerificationResult2">
+        <di:waypoint x="800" y="630" />
+        <di:waypoint x="845" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_VerificationSuccess2" bpmnElement="Flow_VerificationSuccess2">
+        <di:waypoint x="895" y="630" />
+        <di:waypoint x="960" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="919" y="612" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToEndSuccess1" bpmnElement="Flow_ToEndSuccess1">
+        <di:waypoint x="940" y="370" />
+        <di:waypoint x="1030" y="370" />
+        <di:waypoint x="1030" y="475" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToEndSuccess2" bpmnElement="Flow_ToEndSuccess2">
+        <di:waypoint x="1010" y="590" />
+        <di:waypoint x="1030" y="590" />
+        <di:waypoint x="1030" y="525" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_JoinToEndSuccess" bpmnElement="Flow_JoinToEndSuccess">
+        <di:waypoint x="1055" y="500" />
+        <di:waypoint x="1132" y="500" />
+      </bpmndi:BPMNEdge>
+      
+      <!-- Corrected Failure Path Edges -->
+      <bpmndi:BPMNEdge id="Edge_Flow_VerificationFailure1" bpmnElement="Flow_VerificationFailure1">
+        <di:waypoint x="750" y="395" />
+        <di:waypoint x="750" y="440" />
+        <di:waypoint x="960" y="440" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="845" y="418" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_VerificationFailure2" bpmnElement="Flow_VerificationFailure2">
+        <di:waypoint x="870" y="605" />
+        <di:waypoint x="870" y="540" />
+        <di:waypoint x="960" y="540" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="905" y="518" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_FromRefuseToMerge" bpmnElement="Flow_FromRefuseToMerge">
+        <di:waypoint x="1060" y="440" />
+        <di:waypoint x="1175" y="440" />
+        <di:waypoint x="1175" y="475" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_FromTerminateToMerge" bpmnElement="Flow_FromTerminateToMerge">
+        <di:waypoint x="1060" y="540" />
+        <di:waypoint x="1175" y="540" />
+        <di:waypoint x="1175" y="525" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MergedFailureToReportDecision" bpmnElement="Flow_MergedFailureToReportDecision">
+        <di:waypoint x="1200" y="500" />
+        <di:waypoint x="1365" y="500" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Edge_Flow_ReportYes" bpmnElement="Flow_ReportYes">
+        <di:waypoint x="1415" y="500" />
+        <di:waypoint x="1480" y="500" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1439" y="482" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToEndReported" bpmnElement="Flow_ToEndReported">
+        <di:waypoint x="1580" y="500" />
+        <di:waypoint x="1642" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ReportNo" bpmnElement="Flow_ReportNo">
+        <di:waypoint x="1390" y="525" />
+        <di:waypoint x="1390" y="630" />
+        <di:waypoint x="1492" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1398" y="575" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- FIU Pool -->
+      <bpmndi:BPMNShape id="Shape_StartEvent_ReportReceived" bpmnElement="StartEvent_ReportReceived">
+        <dc:Bounds x="1512" y="932" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1489" y="975" width="82" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ProcessReport" bpmnElement="Task_ProcessReport">
+        <dc:Bounds x="1610" y="910" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_FIU" bpmnElement="EndEvent_FIU">
+        <dc:Bounds x="1772" y="932" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1749" y="975" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_FIU_1" bpmnElement="Flow_FIU_1">
+        <di:waypoint x="1548" y="950" />
+        <di:waypoint x="1610" y="950" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_FIU_2" bpmnElement="Flow_FIU_2">
+        <di:waypoint x="1710" y="950" />
+        <di:waypoint x="1772" y="950" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Message Flows -->
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_CustomerToOE" bpmnElement="MessageFlow_CustomerToOE">
+        <di:waypoint x="370" y="190" />
+        <di:waypoint x="370" y="361" />
+        <di:waypoint x="260" y="361" />
+        <di:waypoint x="260" y="532" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_OEToFIU" bpmnElement="MessageFlow_OEToFIU">
+        <di:waypoint x="1530" y="540" />
+        <di:waypoint x="1530" y="932" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

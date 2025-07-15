@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Customer" name="Customer" processRef="Process_Customer" />
+    <bpmn:participant id="Participant_NetworkOperator" name="Network Operator" processRef="Process_NetworkOperator" />
+    <bpmn:participant id="Participant_Meter" name="Meter" processRef="Process_Meter" />
+    <bpmn:participant id="Participant_CentralSystem" name="Central System" processRef="Process_CentralSystem" />
+    <bpmn:messageFlow id="MessageFlow_NOToMeter_Activate" sourceRef="Task_SendActivate" targetRef="IntermediateCatchEvent_Activate" />
+    <bpmn:messageFlow id="MessageFlow_NOToMeter_Deactivate" sourceRef="Task_SendDeactivate" targetRef="IntermediateCatchEvent_Deactivate" />
+    <bpmn:messageFlow id="MessageFlow_MeterToCS_On" sourceRef="Task_ReportOn" targetRef="IntermediateCatchEvent_StatusOn" />
+    <bpmn:messageFlow id="MessageFlow_MeterToCS_Off" sourceRef="Task_ReportOff" targetRef="IntermediateCatchEvent_StatusOff" />
+    <bpmn:messageFlow id="MessageFlow_MeterToCS_Off_FromNew" sourceRef="Task_ReportOff_FromNew" targetRef="IntermediateCatchEvent_StatusOff" />
+  </bpmn:collaboration>
+
+  <!-- Customer Process -->
+  <bpmn:process id="Process_Customer" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_CustomerWishes" name="Customer Wishes to Activate/Deactivate">
+      <bpmn:outgoing>Flow_StartToInform</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_InformNO" name="Inform Network Operator (via Portal, Letter, etc.)">
+      <bpmn:incoming>Flow_StartToInform</bpmn:incoming>
+      <bpmn:outgoing>Flow_InformToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_StartToInform" sourceRef="StartEvent_CustomerWishes" targetRef="Task_InformNO" />
+    <bpmn:endEvent id="EndEvent_CustomerRequestSent" name="Customer Request Sent">
+      <bpmn:incoming>Flow_InformToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_InformToEnd" sourceRef="Task_InformNO" targetRef="EndEvent_CustomerRequestSent" />
+  </bpmn:process>
+
+  <!-- Network Operator Process -->
+  <bpmn:process id="Process_NetworkOperator" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_RequestReceived" name="Periodic Synchronization">
+      <bpmn:outgoing>Flow_TimerToTask</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_TimerToTask" sourceRef="StartEvent_RequestReceived" targetRef="Task_CheckRequests" />
+    <bpmn:task id="Task_CheckRequests" name="Check for Pending Requests">
+      <bpmn:incoming>Flow_TimerToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_RequestToGateway</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_RequestToGateway" sourceRef="Task_CheckRequests" targetRef="Gateway_ActivateOrDeactivate" />
+    <bpmn:exclusiveGateway id="Gateway_ActivateOrDeactivate" name="Activate or Deactivate?">
+      <bpmn:incoming>Flow_RequestToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Activate</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Deactivate</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_SendActivate" name="Send 'Activate' Command">
+      <bpmn:incoming>Flow_Activate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ActivateToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_Activate" name="Activate" sourceRef="Gateway_ActivateOrDeactivate" targetRef="Task_SendActivate" />
+    <bpmn:task id="Task_SendDeactivate" name="Send 'Deactivate' Command">
+      <bpmn:incoming>Flow_Deactivate</bpmn:incoming>
+      <bpmn:outgoing>Flow_DeactivateToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_Deactivate" name="Deactivate" sourceRef="Gateway_ActivateOrDeactivate" targetRef="Task_SendDeactivate" />
+    <bpmn:endEvent id="EndEvent_NO_Activate" name="Activation Command Sent">
+      <bpmn:incoming>Flow_ActivateToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ActivateToEnd" sourceRef="Task_SendActivate" targetRef="EndEvent_NO_Activate" />
+    <bpmn:endEvent id="EndEvent_NO_Deactivate" name="Deactivation Command Sent">
+      <bpmn:incoming>Flow_DeactivateToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_DeactivateToEnd" sourceRef="Task_SendDeactivate" targetRef="EndEvent_NO_Deactivate" />
+  </bpmn:process>
+
+  <!-- Meter Process -->
+  <bpmn:process id="Process_Meter" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Meter" name="Meter Process Started">
+      <bpmn:outgoing>Flow_MeterStartToGateway</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_MeterStartToGateway" sourceRef="StartEvent_Meter" targetRef="Gateway_WaitForCommand" />
+    <bpmn:eventBasedGateway id="Gateway_WaitForCommand">
+      <bpmn:incoming>Flow_MeterStartToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToActivateCatch</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToDeactivateCatch</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_Activate" name="Receive 'Activate' Command">
+      <bpmn:incoming>Flow_ToActivateCatch</bpmn:incoming>
+      <bpmn:outgoing>Flow_ActivateToCheck</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_Activate" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToActivateCatch" sourceRef="Gateway_WaitForCommand" targetRef="IntermediateCatchEvent_Activate" />
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_Deactivate" name="Receive 'Deactivate' Command">
+      <bpmn:incoming>Flow_ToDeactivateCatch</bpmn:incoming>
+      <bpmn:outgoing>Flow_DeactivateToTask</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_Deactivate" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToDeactivateCatch" sourceRef="Gateway_WaitForCommand" targetRef="IntermediateCatchEvent_Deactivate" />
+    <bpmn:task id="Task_DeactivateDisplay" name="Deactivate Display">
+      <bpmn:incoming>Flow_DeactivateToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_DeactivateToLog</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_DeactivateToTask" sourceRef="IntermediateCatchEvent_Deactivate" targetRef="Task_DeactivateDisplay" />
+    <bpmn:task id="Task_LogOffInMeter" name="Log 'OFF' in Logbook">
+      <bpmn:incoming>Flow_DeactivateToLog</bpmn:incoming>
+      <bpmn:outgoing>Flow_LogOffToReport</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_DeactivateToLog" sourceRef="Task_DeactivateDisplay" targetRef="Task_LogOffInMeter" />
+    <bpmn:task id="Task_ReportOff" name="Report Status (EVENT) 'LP Display OFF'">
+      <bpmn:incoming>Flow_LogOffToReport</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReportOffToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_LogOffToReport" sourceRef="Task_LogOffInMeter" targetRef="Task_ReportOff" />
+    <bpmn:endEvent id="EndEvent_Meter_Deactivated" name="Meter Deactivated">
+      <bpmn:incoming>Flow_ReportOffToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ReportOffToEnd" sourceRef="Task_ReportOff" targetRef="EndEvent_Meter_Deactivated" />
+    <bpmn:task id="Task_CheckNewCustomer" name="Check for New Customer">
+      <bpmn:incoming>Flow_ActivateToCheck</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckToGateway</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ActivateToCheck" sourceRef="IntermediateCatchEvent_Activate" targetRef="Task_CheckNewCustomer" />
+    <bpmn:exclusiveGateway id="Gateway_IsNewCustomer" name="New Customer?">
+      <bpmn:incoming>Flow_CheckToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_NewCustomerYes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_NewCustomerNo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_CheckToGateway" sourceRef="Task_CheckNewCustomer" targetRef="Gateway_IsNewCustomer" />
+    <bpmn:task id="Task_ActivateDisplay" name="Activate Display">
+      <bpmn:incoming>Flow_NewCustomerNo</bpmn:incoming>
+      <bpmn:outgoing>Flow_ActivateToLog</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_NewCustomerNo" name="No" sourceRef="Gateway_IsNewCustomer" targetRef="Task_ActivateDisplay" />
+    <bpmn:task id="Task_LogOnInMeter" name="Log 'ON' in Logbook">
+      <bpmn:incoming>Flow_ActivateToLog</bpmn:incoming>
+      <bpmn:outgoing>Flow_LogOnToReport</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ActivateToLog" sourceRef="Task_ActivateDisplay" targetRef="Task_LogOnInMeter" />
+    <bpmn:task id="Task_ReportOn" name="Report Status (EVENT) 'LP Display ON'">
+      <bpmn:incoming>Flow_LogOnToReport</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReportOnToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_LogOnToReport" sourceRef="Task_LogOnInMeter" targetRef="Task_ReportOn" />
+    <bpmn:endEvent id="EndEvent_Meter_Activated" name="Meter Activated">
+      <bpmn:incoming>Flow_ReportOnToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ReportOnToEnd" sourceRef="Task_ReportOn" targetRef="EndEvent_Meter_Activated" />
+    <bpmn:task id="Task_ForceDeactivation" name="Force Deactivation for New Customer">
+      <bpmn:incoming>Flow_NewCustomerYes</bpmn:incoming>
+      <bpmn:outgoing>Flow_ForceDeactivationToLog</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_NewCustomerYes" name="Yes" sourceRef="Gateway_IsNewCustomer" targetRef="Task_ForceDeactivation" />
+    <bpmn:task id="Task_LogOffInMeter_New" name="Log 'OFF' in Logbook">
+      <bpmn:incoming>Flow_ForceDeactivationToLog</bpmn:incoming>
+      <bpmn:outgoing>Flow_LogOffNewToReport</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ForceDeactivationToLog" sourceRef="Task_ForceDeactivation" targetRef="Task_LogOffInMeter_New" />
+    <bpmn:task id="Task_ReportOff_FromNew" name="Report Status (EVENT) 'LP Display OFF'">
+      <bpmn:incoming>Flow_LogOffNewToReport</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReportOffNewToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_LogOffNewToReport" sourceRef="Task_LogOffInMeter_New" targetRef="Task_ReportOff_FromNew" />
+    <bpmn:intermediateCatchEvent id="IntermediateEvent_Timer60Days" name="Wait 60 Days">
+      <bpmn:incoming>Flow_ReportOffNewToEnd</bpmn:incoming>
+      <bpmn:outgoing>Flow_TimerToEnd</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_60d" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ReportOffNewToEnd" sourceRef="Task_ReportOff_FromNew" targetRef="IntermediateEvent_Timer60Days" />
+    <bpmn:endEvent id="EndEvent_Meter_NewCustomer" name="Meter Deactivated for New Customer">
+      <bpmn:incoming>Flow_TimerToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_TimerToEnd" sourceRef="IntermediateEvent_Timer60Days" targetRef="EndEvent_Meter_NewCustomer" />
+  </bpmn:process>
+
+  <!-- Central System Process -->
+  <bpmn:process id="Process_CentralSystem" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_CS" name="CS Process Started">
+      <bpmn:outgoing>Flow_CSStartToGateway</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_CSStartToGateway" sourceRef="StartEvent_CS" targetRef="Gateway_WaitForStatus" />
+    <bpmn:eventBasedGateway id="Gateway_WaitForStatus">
+      <bpmn:incoming>Flow_CSStartToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToStatusOn</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToStatusOff</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_StatusOn" name="Receive 'ON' Status">
+      <bpmn:incoming>Flow_ToStatusOn</bpmn:incoming>
+      <bpmn:outgoing>Flow_OnToMerge</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_StatusOn" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToStatusOn" sourceRef="Gateway_WaitForStatus" targetRef="IntermediateCatchEvent_StatusOn" />
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_StatusOff" name="Receive 'OFF' Status">
+      <bpmn:incoming>Flow_ToStatusOff</bpmn:incoming>
+      <bpmn:outgoing>Flow_OffToMerge</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_StatusOff" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToStatusOff" sourceRef="Gateway_WaitForStatus" targetRef="IntermediateCatchEvent_StatusOff" />
+    <bpmn:exclusiveGateway id="Gateway_MergeStatus">
+      <bpmn:incoming>Flow_OnToMerge</bpmn:incoming>
+      <bpmn:incoming>Flow_OffToMerge</bpmn:incoming>
+      <bpmn:outgoing>Flow_MergeToLog</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_OnToMerge" sourceRef="IntermediateCatchEvent_StatusOn" targetRef="Gateway_MergeStatus" />
+    <bpmn:sequenceFlow id="Flow_OffToMerge" sourceRef="IntermediateCatchEvent_StatusOff" targetRef="Gateway_MergeStatus" />
+    <bpmn:task id="Task_LogStatus" name="Receive and Log Status">
+      <bpmn:incoming>Flow_MergeToLog</bpmn:incoming>
+      <bpmn:outgoing>Flow_LogToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_MergeToLog" sourceRef="Gateway_MergeStatus" targetRef="Task_LogStatus" />
+    <bpmn:endEvent id="EndEvent_CS_Logged" name="Status Logged">
+      <bpmn:incoming>Flow_LogToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_LogToEnd" sourceRef="Task_LogStatus" targetRef="EndEvent_CS_Logged" />
+  </bpmn:process>
+
+  <bpmn:message id="Message_CustomerRequest" name="Message_CustomerRequest" />
+  <bpmn:message id="Message_Activate" name="Message_Activate" />
+  <bpmn:message id="Message_Deactivate" name="Message_Deactivate" />
+  <bpmn:message id="Message_StatusOn" name="Message_StatusOn" />
+  <bpmn:message id="Message_StatusOff" name="Message_StatusOff" />
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <!-- Customer Pool -->
+      <bpmndi:BPMNShape id="Participant_Customer_Shape" bpmnElement="Participant_Customer" isHorizontal="true">
+        <dc:Bounds x="100" y="80" width="1350" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_CustomerWishes_Shape" bpmnElement="StartEvent_CustomerWishes">
+        <dc:Bounds x="150" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_InformNO_Shape" bpmnElement="Task_InformNO">
+        <dc:Bounds x="230" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_CustomerRequestSent_Shape" bpmnElement="EndEvent_CustomerRequestSent">
+        <dc:Bounds x="380" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_StartToInform_Edge" bpmnElement="Flow_StartToInform">
+        <di:waypoint x="186" y="200" />
+        <di:waypoint x="230" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InformToEnd_Edge" bpmnElement="Flow_InformToEnd">
+        <di:waypoint x="330" y="200" />
+        <di:waypoint x="380" y="200" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Network Operator Pool -->
+      <bpmndi:BPMNShape id="Participant_NetworkOperator_Shape" bpmnElement="Participant_NetworkOperator" isHorizontal="true">
+        <dc:Bounds x="100" y="380" width="1350" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_RequestReceived_Shape" bpmnElement="StartEvent_RequestReceived">
+        <dc:Bounds x="152" y="482" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CheckRequests_Shape" bpmnElement="Task_CheckRequests">
+        <dc:Bounds x="220" y="460" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ActivateOrDeactivate_Shape" bpmnElement="Gateway_ActivateOrDeactivate" isMarkerVisible="true">
+        <dc:Bounds x="355" y="475" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendActivate_Shape" bpmnElement="Task_SendActivate">
+        <dc:Bounds x="460" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendDeactivate_Shape" bpmnElement="Task_SendDeactivate">
+        <dc:Bounds x="460" y="510" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_NO_Activate_Shape" bpmnElement="EndEvent_NO_Activate">
+        <dc:Bounds x="610" y="422" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_NO_Deactivate_Shape" bpmnElement="EndEvent_NO_Deactivate">
+        <dc:Bounds x="610" y="532" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_TimerToTask_Edge" bpmnElement="Flow_TimerToTask">
+        <di:waypoint x="188" y="500" />
+        <di:waypoint x="220" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RequestToGateway_Edge" bpmnElement="Flow_RequestToGateway">
+        <di:waypoint x="320" y="500" />
+        <di:waypoint x="355" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Activate_Edge" bpmnElement="Flow_Activate">
+        <di:waypoint x="380" y="475" />
+        <di:waypoint x="380" y="440" />
+        <di:waypoint x="460" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Deactivate_Edge" bpmnElement="Flow_Deactivate">
+        <di:waypoint x="380" y="525" />
+        <di:waypoint x="380" y="550" />
+        <di:waypoint x="460" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ActivateToEnd_Edge" bpmnElement="Flow_ActivateToEnd">
+        <di:waypoint x="560" y="440" />
+        <di:waypoint x="610" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DeactivateToEnd_Edge" bpmnElement="Flow_DeactivateToEnd">
+        <di:waypoint x="560" y="550" />
+        <di:waypoint x="610" y="550" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Meter Pool -->
+      <bpmndi:BPMNShape id="Participant_Meter_Shape" bpmnElement="Participant_Meter" isHorizontal="true">
+        <dc:Bounds x="100" y="680" width="1350" height="400" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Meter_Shape" bpmnElement="StartEvent_Meter">
+        <dc:Bounds x="132" y="832" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_MeterStartToGateway_Edge" bpmnElement="Flow_MeterStartToGateway">
+        <di:waypoint x="168" y="850" />
+        <di:waypoint x="205" y="850" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Gateway_WaitForCommand_Shape" bpmnElement="Gateway_WaitForCommand">
+        <dc:Bounds x="205" y="825" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_Activate_Shape" bpmnElement="IntermediateCatchEvent_Activate">
+        <dc:Bounds x="292" y="752" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_Deactivate_Shape" bpmnElement="IntermediateCatchEvent_Deactivate">
+        <dc:Bounds x="292" y="912" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CheckNewCustomer_Shape" bpmnElement="Task_CheckNewCustomer">
+        <dc:Bounds x="370" y="730" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_IsNewCustomer_Shape" bpmnElement="Gateway_IsNewCustomer" isMarkerVisible="true">
+        <dc:Bounds x="515" y="745" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ActivateDisplay_Shape" bpmnElement="Task_ActivateDisplay">
+        <dc:Bounds x="610" y="690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LogOnInMeter_Shape" bpmnElement="Task_LogOnInMeter">
+        <dc:Bounds x="750" y="690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportOn_Shape" bpmnElement="Task_ReportOn">
+        <dc:Bounds x="890" y="690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Meter_Activated_Shape" bpmnElement="EndEvent_Meter_Activated">
+        <dc:Bounds x="1032" y="712" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ForceDeactivation_Shape" bpmnElement="Task_ForceDeactivation">
+        <dc:Bounds x="610" y="830" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LogOffInMeter_New_Shape" bpmnElement="Task_LogOffInMeter_New">
+        <dc:Bounds x="750" y="830" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportOff_FromNew_Shape" bpmnElement="Task_ReportOff_FromNew">
+        <dc:Bounds x="890" y="830" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateEvent_Timer60Days_Shape" bpmnElement="IntermediateEvent_Timer60Days">
+        <dc:Bounds x="1032" y="852" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Meter_NewCustomer_Shape" bpmnElement="EndEvent_Meter_NewCustomer">
+        <dc:Bounds x="1110" y="852" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DeactivateDisplay_Shape" bpmnElement="Task_DeactivateDisplay">
+        <dc:Bounds x="370" y="950" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LogOffInMeter_Shape" bpmnElement="Task_LogOffInMeter">
+        <dc:Bounds x="510" y="950" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportOff_Shape" bpmnElement="Task_ReportOff">
+        <dc:Bounds x="650" y="950" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Meter_Deactivated_Shape" bpmnElement="EndEvent_Meter_Deactivated">
+        <dc:Bounds x="792" y="972" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToActivateCatch_Edge" bpmnElement="Flow_ToActivateCatch">
+        <di:waypoint x="230" y="825" />
+        <di:waypoint x="230" y="770" />
+        <di:waypoint x="292" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToDeactivateCatch_Edge" bpmnElement="Flow_ToDeactivateCatch">
+        <di:waypoint x="230" y="875" />
+        <di:waypoint x="230" y="930" />
+        <di:waypoint x="292" y="930" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ActivateToCheck_Edge" bpmnElement="Flow_ActivateToCheck">
+        <di:waypoint x="328" y="770" />
+        <di:waypoint x="370" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckToGateway_Edge" bpmnElement="Flow_CheckToGateway">
+        <di:waypoint x="470" y="770" />
+        <di:waypoint x="515" y="770" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_NewCustomerNo_Edge" bpmnElement="Flow_NewCustomerNo">
+        <di:waypoint x="540" y="745" />
+        <di:waypoint x="540" y="730" />
+        <di:waypoint x="610" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ActivateToLog_Edge" bpmnElement="Flow_ActivateToLog">
+        <di:waypoint x="710" y="730" />
+        <di:waypoint x="750" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LogOnToReport_Edge" bpmnElement="Flow_LogOnToReport">
+        <di:waypoint x="850" y="730" />
+        <di:waypoint x="890" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReportOnToEnd_Edge" bpmnElement="Flow_ReportOnToEnd">
+        <di:waypoint x="990" y="730" />
+        <di:waypoint x="1032" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_NewCustomerYes_Edge" bpmnElement="Flow_NewCustomerYes">
+        <di:waypoint x="540" y="795" />
+        <di:waypoint x="540" y="870" />
+        <di:waypoint x="610" y="870" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ForceDeactivationToLog_Edge" bpmnElement="Flow_ForceDeactivationToLog">
+        <di:waypoint x="710" y="870" />
+        <di:waypoint x="750" y="870" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LogOffNewToReport_Edge" bpmnElement="Flow_LogOffNewToReport">
+        <di:waypoint x="850" y="870" />
+        <di:waypoint x="890" y="870" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReportOffNewToEnd_Edge" bpmnElement="Flow_ReportOffNewToEnd">
+        <di:waypoint x="990" y="870" />
+        <di:waypoint x="1032" y="870" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TimerToEnd_Edge" bpmnElement="Flow_TimerToEnd">
+        <di:waypoint x="1068" y="870" />
+        <di:waypoint x="1110" y="870" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DeactivateToTask_Edge" bpmnElement="Flow_DeactivateToTask">
+        <di:waypoint x="328" y="930" />
+        <di:waypoint x="328" y="990" />
+        <di:waypoint x="370" y="990" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DeactivateToLog_Edge" bpmnElement="Flow_DeactivateToLog">
+        <di:waypoint x="470" y="990" />
+        <di:waypoint x="510" y="990" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LogOffToReport_Edge" bpmnElement="Flow_LogOffToReport">
+        <di:waypoint x="610" y="990" />
+        <di:waypoint x="650" y="990" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReportOffToEnd_Edge" bpmnElement="Flow_ReportOffToEnd">
+        <di:waypoint x="750" y="990" />
+        <di:waypoint x="792" y="990" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Central System Pool -->
+      <bpmndi:BPMNShape id="Participant_CentralSystem_Shape" bpmnElement="Participant_CentralSystem" isHorizontal="true">
+        <dc:Bounds x="100" y="1100" width="1350" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_CS_Shape" bpmnElement="StartEvent_CS">
+        <dc:Bounds x="132" y="1202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_CSStartToGateway_Edge" bpmnElement="Flow_CSStartToGateway">
+        <di:waypoint x="168" y="1220" />
+        <di:waypoint x="205" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Gateway_WaitForStatus_Shape" bpmnElement="Gateway_WaitForStatus">
+        <dc:Bounds x="205" y="1195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_StatusOn_Shape" bpmnElement="IntermediateCatchEvent_StatusOn">
+        <dc:Bounds x="292" y="1152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_StatusOff_Shape" bpmnElement="IntermediateCatchEvent_StatusOff">
+        <dc:Bounds x="292" y="1252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_MergeStatus_Shape" bpmnElement="Gateway_MergeStatus" isMarkerVisible="true">
+        <dc:Bounds x="375" y="1195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LogStatus_Shape" bpmnElement="Task_LogStatus">
+        <dc:Bounds x="480" y="1180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_CS_Logged_Shape" bpmnElement="EndEvent_CS_Logged">
+        <dc:Bounds x="632" y="1202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToStatusOn_Edge" bpmnElement="Flow_ToStatusOn">
+        <di:waypoint x="230" y="1195" />
+        <di:waypoint x="230" y="1170" />
+        <di:waypoint x="292" y="1170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToStatusOff_Edge" bpmnElement="Flow_ToStatusOff">
+        <di:waypoint x="230" y="1245" />
+        <di:waypoint x="230" y="1270" />
+        <di:waypoint x="292" y="1270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_OnToMerge_Edge" bpmnElement="Flow_OnToMerge">
+        <di:waypoint x="328" y="1170" />
+        <di:waypoint x="400" y="1170" />
+        <di:waypoint x="400" y="1195" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_OffToMerge_Edge" bpmnElement="Flow_OffToMerge">
+        <di:waypoint x="328" y="1270" />
+        <di:waypoint x="400" y="1270" />
+        <di:waypoint x="400" y="1245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_MergeToLog_Edge" bpmnElement="Flow_MergeToLog">
+        <di:waypoint x="425" y="1220" />
+        <di:waypoint x="480" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LogToEnd_Edge" bpmnElement="Flow_LogToEnd">
+        <di:waypoint x="580" y="1220" />
+        <di:waypoint x="632" y="1220" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Message Flows -->
+      <bpmndi:BPMNEdge id="MessageFlow_NOToMeter_Activate_Edge" bpmnElement="MessageFlow_NOToMeter_Activate">
+        <di:waypoint x="510" y="480" />
+        <di:waypoint x="510" y="645" />
+        <di:waypoint x="310" y="645" />
+        <di:waypoint x="310" y="752" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_NOToMeter_Deactivate_Edge" bpmnElement="MessageFlow_NOToMeter_Deactivate">
+        <di:waypoint x="510" y="590" />
+        <di:waypoint x="510" y="665" />
+        <di:waypoint x="310" y="665" />
+        <di:waypoint x="310" y="912" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_MeterToCS_On_Edge" bpmnElement="MessageFlow_MeterToCS_On">
+        <di:waypoint x="940" y="770" />
+        <di:waypoint x="940" y="1090" />
+        <di:waypoint x="310" y="1090" />
+        <di:waypoint x="310" y="1152" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_MeterToCS_Off_Edge" bpmnElement="MessageFlow_MeterToCS_Off">
+        <di:waypoint x="700" y="1030" />
+        <di:waypoint x="700" y="1110" />
+        <di:waypoint x="310" y="1110" />
+        <di:waypoint x="310" y="1252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_MeterToCS_Off_FromNew_Edge" bpmnElement="MessageFlow_MeterToCS_Off_FromNew">
+        <di:waypoint x="940" y="910" />
+        <di:waypoint x="940" y="1130" />
+        <di:waypoint x="310" y="1130" />
+        <di:waypoint x="310" y="1252" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

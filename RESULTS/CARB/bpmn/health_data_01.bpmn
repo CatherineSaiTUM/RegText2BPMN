@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_TransferringMS" name="Transferring Member State" processRef="Process_TransferringMS" />
+    <bpmn:participant id="Participant_ResponsibleMS" name="Member State responsible" processRef="Process_ResponsibleMS" />
+    <bpmn:participant id="Participant_Commission" name="Commission" processRef="Process_Commission" />
+    <bpmn:participant id="Participant_Applicant" name="Applicant" processRef="Process_Applicant" />
+    <bpmn:participant id="Participant_HealthProfessional" name="Health Professional" processRef="Process_HealthProfessional" />
+    <bpmn:messageFlow id="MessageFlow_ConsentRequest" sourceRef="Task_RequestConsent" targetRef="StartEvent_Applicant" />
+    <bpmn:messageFlow id="MessageFlow_ConsentResponse" sourceRef="Task_ProvideConsent" targetRef="Event_ConsentReceived" />
+    <bpmn:messageFlow id="MessageFlow_InstructionToTransmit" sourceRef="Task_InstructProfessional" targetRef="StartEvent_HealthProfessional" />
+    <bpmn:messageFlow id="MessageFlow_HealthData" sourceRef="Task_TransmitInfo" targetRef="StartEvent_ResponsibleMS" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_TransferringMS" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_NeedToExchange" name="Need to exchange health data">
+      <bpmn:outgoing>Flow_ToRequestConsent</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_RequestConsent" name="Request explicit consent from applicant">
+      <bpmn:incoming>Flow_ToRequestConsent</bpmn:incoming>
+      <bpmn:outgoing>Flow_ConsentRequested</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ToRequestConsent" sourceRef="StartEvent_NeedToExchange" targetRef="Task_RequestConsent" />
+    <bpmn:intermediateCatchEvent id="Event_ConsentReceived" name="Consent response received">
+      <bpmn:incoming>Flow_ConsentRequested</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToGateway</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ConsentReceived" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ConsentRequested" sourceRef="Task_RequestConsent" targetRef="Event_ConsentReceived" />
+    <bpmn:exclusiveGateway id="Gateway_ConsentStatus" name="Consent obtained or vital interest?">
+      <bpmn:incoming>Flow_ToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_ConsentGiven</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ConsentRefused</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ToGateway" sourceRef="Event_ConsentReceived" targetRef="Gateway_ConsentStatus" />
+    <bpmn:task id="Task_InstructProfessional" name="Instruct health professional to transmit data">
+      <bpmn:incoming>Flow_ConsentGiven</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromInstruct</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ConsentGiven" name="Yes" sourceRef="Gateway_ConsentStatus" targetRef="Task_InstructProfessional" />
+    <bpmn:endEvent id="EndEvent_ExchangeConcluded" name="Data Exchange Process Concluded">
+      <bpmn:incoming>Flow_FromInstruct</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_FromInstruct" sourceRef="Task_InstructProfessional" targetRef="EndEvent_ExchangeConcluded" />
+    <bpmn:endEvent id="EndEvent_ExchangeCancelled" name="Data Exchange Not Performed">
+      <bpmn:incoming>Flow_ConsentRefused</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ConsentRefused" name="No" sourceRef="Gateway_ConsentStatus" targetRef="EndEvent_ExchangeCancelled" />
+  </bpmn:process>
+  <bpmn:process id="Process_ResponsibleMS" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_ResponsibleMS" name="Health certificate received">
+      <bpmn:outgoing>Flow_ToAddressNeeds</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_DataReceived" />
+    </bpmn:startEvent>
+    <bpmn:task id="Task_AddressNeeds" name="Ensure special needs are adequately addressed">
+      <bpmn:incoming>Flow_ToAddressNeeds</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ToAddressNeeds" sourceRef="StartEvent_ResponsibleMS" targetRef="Task_AddressNeeds" />
+    <bpmn:endEvent id="EndEvent_ResponsibleMS" name="Transfer process continues">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="Task_AddressNeeds" targetRef="EndEvent_ResponsibleMS" />
+  </bpmn:process>
+  <bpmn:process id="Process_Commission" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Commission" name="Mandate to create standards">
+      <bpmn:outgoing>Flow_ToDrawUpCert</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_DrawUpCert" name="Draw up common health certificate">
+      <bpmn:incoming>Flow_ToDrawUpCert</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAdoptConditions</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ToDrawUpCert" sourceRef="StartEvent_Commission" targetRef="Task_DrawUpCert" />
+    <bpmn:task id="Task_AdoptConditions" name="Adopt uniform conditions for exchange">
+      <bpmn:incoming>Flow_ToAdoptConditions</bpmn:incoming>
+      <bpmn:outgoing>Flow_CommissionEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ToAdoptConditions" sourceRef="Task_DrawUpCert" targetRef="Task_AdoptConditions" />
+    <bpmn:endEvent id="EndEvent_Commission" name="Standards published">
+      <bpmn:incoming>Flow_CommissionEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_CommissionEnd" sourceRef="Task_AdoptConditions" targetRef="EndEvent_Commission" />
+  </bpmn:process>
+  <bpmn:process id="Process_Applicant" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Applicant" name="Consent request received">
+      <bpmn:outgoing>Flow_ToProvideConsent</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ConsentRequest" />
+    </bpmn:startEvent>
+    <bpmn:task id="Task_ProvideConsent" name="Provide or refuse consent">
+      <bpmn:incoming>Flow_ToProvideConsent</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromProvideConsent</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ToProvideConsent" sourceRef="StartEvent_Applicant" targetRef="Task_ProvideConsent" />
+    <bpmn:endEvent id="EndEvent_Applicant" name="Consent response sent">
+      <bpmn:incoming>Flow_FromProvideConsent</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_FromProvideConsent" sourceRef="Task_ProvideConsent" targetRef="EndEvent_Applicant" />
+  </bpmn:process>
+  <bpmn:process id="Process_HealthProfessional" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_HealthProfessional" name="Instruction to transmit received">
+      <bpmn:outgoing>Flow_ToProcessData</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_InstructionReceived" />
+    </bpmn:startEvent>
+    <bpmn:task id="Task_ProcessData" name="Process personal health data">
+      <bpmn:incoming>Flow_ToProcessData</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToTransmitInfo</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ToProcessData" sourceRef="StartEvent_HealthProfessional" targetRef="Task_ProcessData" />
+    <bpmn:task id="Task_TransmitInfo" name="Transmit info in common health certificate">
+      <bpmn:incoming>Flow_ToTransmitInfo</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromTransmitInfo</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ToTransmitInfo" sourceRef="Task_ProcessData" targetRef="Task_TransmitInfo" />
+    <bpmn:endEvent id="EndEvent_HealthProfessional" name="Health data transmitted">
+      <bpmn:incoming>Flow_FromTransmitInfo</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_FromTransmitInfo" sourceRef="Task_TransmitInfo" targetRef="EndEvent_HealthProfessional" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Shape_Participant_Commission" bpmnElement="Participant_Commission" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="800" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_Commission" bpmnElement="StartEvent_Commission">
+        <dc:Bounds x="212" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="190" y="205" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_DrawUpCert" bpmnElement="Task_DrawUpCert">
+        <dc:Bounds x="350" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AdoptConditions" bpmnElement="Task_AdoptConditions">
+        <dc:Bounds x="550" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_Commission" bpmnElement="EndEvent_Commission">
+        <dc:Bounds x="752" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="725" y="205" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToDrawUpCert" bpmnElement="Flow_ToDrawUpCert">
+        <di:waypoint x="248" y="180" />
+        <di:waypoint x="350" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToAdoptConditions" bpmnElement="Flow_ToAdoptConditions">
+        <di:waypoint x="450" y="180" />
+        <di:waypoint x="550" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_CommissionEnd" bpmnElement="Flow_CommissionEnd">
+        <di:waypoint x="650" y="180" />
+        <di:waypoint x="752" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Participant_TransferringMS" bpmnElement="Participant_TransferringMS" isHorizontal="true">
+        <dc:Bounds x="160" y="320" width="620" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_NeedToExchange" bpmnElement="StartEvent_NeedToExchange">
+        <dc:Bounds x="212" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="190" y="465" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RequestConsent" bpmnElement="Task_RequestConsent">
+        <dc:Bounds x="290" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Event_ConsentReceived" bpmnElement="Event_ConsentReceived">
+        <dc:Bounds x="432" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="408" y="465" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_ConsentStatus" bpmnElement="Gateway_ConsentStatus" isMarkerVisible="true">
+        <dc:Bounds x="505" y="415" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="490" y="368" width="81" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_InstructProfessional" bpmnElement="Task_InstructProfessional">
+        <dc:Bounds x="620" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToRequestConsent" bpmnElement="Flow_ToRequestConsent">
+        <di:waypoint x="248" y="440" />
+        <di:waypoint x="290" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ConsentRequested" bpmnElement="Flow_ConsentRequested">
+        <di:waypoint x="390" y="440" />
+        <di:waypoint x="432" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToGateway" bpmnElement="Flow_ToGateway">
+        <di:waypoint x="468" y="440" />
+        <di:waypoint x="505" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ConsentGiven" bpmnElement="Flow_ConsentGiven">
+        <di:waypoint x="555" y="440" />
+        <di:waypoint x="620" y="440" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="579" y="417" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Participant_Applicant" bpmnElement="Participant_Applicant" isHorizontal="true">
+        <dc:Bounds x="160" y="610" width="470" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_Applicant" bpmnElement="StartEvent_Applicant">
+        <dc:Bounds x="212" y="682" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="190" y="725" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ProvideConsent" bpmnElement="Task_ProvideConsent">
+        <dc:Bounds x="350" y="660" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToProvideConsent" bpmnElement="Flow_ToProvideConsent">
+        <di:waypoint x="248" y="700" />
+        <di:waypoint x="350" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Participant_HealthProfessional" bpmnElement="Participant_HealthProfessional" isHorizontal="true">
+        <dc:Bounds x="800" y="320" width="440" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_HealthProfessional" bpmnElement="StartEvent_HealthProfessional">
+        <dc:Bounds x="852" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="825" y="465" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ProcessData" bpmnElement="Task_ProcessData">
+        <dc:Bounds x="930" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_TransmitInfo" bpmnElement="Task_TransmitInfo">
+        <dc:Bounds x="1070" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToProcessData" bpmnElement="Flow_ToProcessData">
+        <di:waypoint x="888" y="440" />
+        <di:waypoint x="930" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToTransmitInfo" bpmnElement="Flow_ToTransmitInfo">
+        <di:waypoint x="1030" y="440" />
+        <di:waypoint x="1070" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Participant_ResponsibleMS" bpmnElement="Participant_ResponsibleMS" isHorizontal="true">
+        <dc:Bounds x="1240" y="320" width="400" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_ResponsibleMS" bpmnElement="StartEvent_ResponsibleMS">
+        <dc:Bounds x="1292" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1270" y="465" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AddressNeeds" bpmnElement="Task_AddressNeeds">
+        <dc:Bounds x="1370" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_ResponsibleMS" bpmnElement="EndEvent_ResponsibleMS">
+        <dc:Bounds x="1522" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1495" y="465" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToAddressNeeds" bpmnElement="Flow_ToAddressNeeds">
+        <di:waypoint x="1328" y="440" />
+        <di:waypoint x="1370" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ToEnd" bpmnElement="Flow_ToEnd">
+        <di:waypoint x="1470" y="440" />
+        <di:waypoint x="1522" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_ConsentRequest" bpmnElement="MessageFlow_ConsentRequest">
+        <di:waypoint x="340" y="480" />
+        <di:waypoint x="340" y="590" />
+        <di:waypoint x="230" y="590" />
+        <di:waypoint x="230" y="682" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_ConsentResponse" bpmnElement="MessageFlow_ConsentResponse">
+        <di:waypoint x="400" y="660" />
+        <di:waypoint x="400" y="590" />
+        <di:waypoint x="450" y="590" />
+        <di:waypoint x="450" y="458" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_InstructionToTransmit" bpmnElement="MessageFlow_InstructionToTransmit">
+        <di:waypoint x="720" y="440" />
+        <di:waypoint x="852" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_HealthData" bpmnElement="MessageFlow_HealthData">
+        <di:waypoint x="1170" y="440" />
+        <di:waypoint x="1292" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0f6y8z3_di" bpmnElement="EndEvent_Applicant">
+        <dc:Bounds x="512" y="682" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="491" y="725" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0p6k4g7_di" bpmnElement="Flow_FromProvideConsent">
+        <di:waypoint x="450" y="700" />
+        <di:waypoint x="512" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_1c2b6f4_di" bpmnElement="EndEvent_HealthProfessional">
+        <dc:Bounds x="1200" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1173" y="465" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1v2w3x4_di" bpmnElement="Flow_FromTransmitInfo">
+        <di:waypoint x="1170" y="440" />
+        <di:waypoint x="1200" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0a1b2c3_di" bpmnElement="EndEvent_ExchangeConcluded">
+        <dc:Bounds x="750" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="723" y="465" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0d1e2f3_di" bpmnElement="Flow_FromInstruct">
+        <di:waypoint x="720" y="440" />
+        <di:waypoint x="750" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_ExchangeCancelled_di" bpmnElement="EndEvent_ExchangeCancelled">
+        <dc:Bounds x="518" y="502" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="491" y="545" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_ConsentRefused" bpmnElement="Flow_ConsentRefused">
+        <di:waypoint x="530" y="465" />
+        <di:waypoint x="530" y="502" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="536" y="480" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

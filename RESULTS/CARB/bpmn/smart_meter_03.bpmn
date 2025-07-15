@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Customer" name="Customer" processRef="Process_Customer" />
+    <bpmn:participant id="Participant_NetworkOperator" name="Network Operator" processRef="Process_NetworkOperator" />
+    <bpmn:participant id="Participant_Meter" name="Meter" processRef="Process_Meter" />
+    <bpmn:messageFlow id="MessageFlow_CustomerToOperator" sourceRef="Task_InformOperator" targetRef="StartEvent_OperatorProcess" />
+    <bpmn:messageFlow id="MessageFlow_OperatorToMeter" sourceRef="Task_SendRequest" targetRef="StartEvent_MeterProcess" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Customer" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_CustomerDecision" name="Decision to change display setting">
+      <bpmn:outgoing>Flow_Customer_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_InformOperator" name="Inform Network Operator">
+      <bpmn:incoming>Flow_Customer_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_Customer_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_Customer_1" sourceRef="StartEvent_CustomerDecision" targetRef="Task_InformOperator" />
+    <bpmn:endEvent id="EndEvent_CustomerProcess" name="Request Sent">
+      <bpmn:incoming>Flow_Customer_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Customer_2" sourceRef="Task_InformOperator" targetRef="EndEvent_CustomerProcess" />
+  </bpmn:process>
+  <bpmn:process id="Process_NetworkOperator" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_OperatorProcess" name="Customer Request Received">
+      <bpmn:outgoing>Flow_Operator_1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_OperatorStart" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_Operator_1" sourceRef="StartEvent_OperatorProcess" targetRef="Timer_Sync" />
+    <bpmn:intermediateCatchEvent id="Timer_Sync" name="Wait for Next Synchronization">
+      <bpmn:incoming>Flow_Operator_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_Operator_2</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_Sync" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_Operator_2" sourceRef="Timer_Sync" targetRef="Task_SendRequest" />
+    <bpmn:task id="Task_SendRequest" name="Send Command to Meter">
+      <bpmn:incoming>Flow_Operator_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_Operator_End</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_OperatorProcess" name="Command Sent">
+      <bpmn:incoming>Flow_Operator_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Operator_End" sourceRef="Task_SendRequest" targetRef="EndEvent_OperatorProcess" />
+  </bpmn:process>
+  <bpmn:process id="Process_Meter" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_MeterProcess" name="Command Received">
+      <bpmn:outgoing>Flow_Meter_Start</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_MeterStart" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_Meter_Start" sourceRef="StartEvent_MeterProcess" targetRef="Gateway_IsActivation" />
+    <bpmn:exclusiveGateway id="Gateway_IsActivation" name="Is Activation Request?">
+      <bpmn:incoming>Flow_Meter_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Meter_ActivationPath</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Meter_DeactivationPath</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_Meter_ActivationPath" name="Yes" sourceRef="Gateway_IsActivation" targetRef="Gateway_NewCustomer" />
+    <bpmn:exclusiveGateway id="Gateway_NewCustomer" name="New Customer?">
+      <bpmn:incoming>Flow_Meter_ActivationPath</bpmn:incoming>
+      <bpmn:outgoing>Flow_Meter_NewCustomerYes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Meter_NewCustomerNo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_Meter_NewCustomerYes" name="Yes" sourceRef="Gateway_NewCustomer" targetRef="Task_Deactivate60Days" />
+    <bpmn:task id="Task_Deactivate60Days" name="Deactivate display for 60 days">
+      <bpmn:incoming>Flow_Meter_NewCustomerYes</bpmn:incoming>
+      <bpmn:outgoing>Flow_Meter_After60DayDeactivation</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_Meter_After60DayDeactivation" sourceRef="Task_Deactivate60Days" targetRef="Timer_60Days" />
+    <bpmn:intermediateCatchEvent id="Timer_60Days" name="Wait 60 Days">
+      <bpmn:incoming>Flow_Meter_After60DayDeactivation</bpmn:incoming>
+      <bpmn:outgoing>Flow_Meter_AfterTimer</bpmn:outgoing>
+      <bpmn:timerEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_Meter_AfterTimer" sourceRef="Timer_60Days" targetRef="Gateway_JoinActivate" />
+    <bpmn:sequenceFlow id="Flow_Meter_NewCustomerNo" name="No" sourceRef="Gateway_NewCustomer" targetRef="Gateway_JoinActivate" />
+    <bpmn:exclusiveGateway id="Gateway_JoinActivate">
+      <bpmn:incoming>Flow_Meter_AfterTimer</bpmn:incoming>
+      <bpmn:incoming>Flow_Meter_NewCustomerNo</bpmn:incoming>
+      <bpmn:outgoing>Flow_Meter_JoinToActivate</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_Meter_JoinToActivate" sourceRef="Gateway_JoinActivate" targetRef="Task_ActivateDisplay" />
+    <bpmn:task id="Task_ActivateDisplay" name="Activate Display">
+      <bpmn:incoming>Flow_Meter_JoinToActivate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ActivateToJoin</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_Meter_DeactivationPath" name="No" sourceRef="Gateway_IsActivation" targetRef="Task_DeactivateDisplay" />
+    <bpmn:task id="Task_DeactivateDisplay" name="Deactivate Display">
+      <bpmn:incoming>Flow_Meter_DeactivationPath</bpmn:incoming>
+      <bpmn:outgoing>Flow_DeactivateToJoin</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_JoinReport">
+      <bpmn:incoming>Flow_ActivateToJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_DeactivateToJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_JoinToReport</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ActivateToJoin" sourceRef="Task_ActivateDisplay" targetRef="Gateway_JoinReport" />
+    <bpmn:sequenceFlow id="Flow_DeactivateToJoin" sourceRef="Task_DeactivateDisplay" targetRef="Gateway_JoinReport" />
+    <bpmn:task id="Task_ReportStatus" name="Report Status as ALARM or EVENT">
+      <bpmn:incoming>Flow_JoinToReport</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReportToLog</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_JoinToReport" sourceRef="Gateway_JoinReport" targetRef="Task_ReportStatus" />
+    <bpmn:task id="Task_EnterInLogbook" name="Enter in Logbook">
+      <bpmn:incoming>Flow_ReportToLog</bpmn:incoming>
+      <bpmn:outgoing>Flow_LogToEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_ReportToLog" sourceRef="Task_ReportStatus" targetRef="Task_EnterInLogbook" />
+    <bpmn:endEvent id="EndEvent_MeterProcessComplete" name="Process Complete">
+      <bpmn:incoming>Flow_LogToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_LogToEnd" sourceRef="Task_EnterInLogbook" targetRef="EndEvent_MeterProcessComplete" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Shape_Participant_Customer" bpmnElement="Participant_Customer" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1850" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_CustomerDecision" bpmnElement="StartEvent_CustomerDecision">
+        <dc:Bounds x="222" y="132" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="200" y="173" width="81" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_InformOperator" bpmnElement="Task_InformOperator">
+        <dc:Bounds x="320" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Customer_1" bpmnElement="Flow_Customer_1">
+        <di:waypoint x="258" y="150" />
+        <di:waypoint x="320" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_EndEvent_CustomerProcess" bpmnElement="EndEvent_CustomerProcess">
+        <dc:Bounds x="482" y="132" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="463" y="173" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Customer_2" bpmnElement="Flow_Customer_2">
+        <di:waypoint x="420" y="150" />
+        <di:waypoint x="482" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Participant_NetworkOperator" bpmnElement="Participant_NetworkOperator" isHorizontal="true">
+        <dc:Bounds x="160" y="280" width="1850" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_OperatorProcess" bpmnElement="StartEvent_OperatorProcess">
+        <dc:Bounds x="250" y="352" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="227" y="393" width="82" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Timer_Sync" bpmnElement="Timer_Sync">
+        <dc:Bounds x="342" y="352" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="320" y="393" width="81" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Operator_1" bpmnElement="Flow_Operator_1">
+        <di:waypoint x="286" y="370" />
+        <di:waypoint x="342" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Operator_2" bpmnElement="Flow_Operator_2">
+        <di:waypoint x="378" y="370" />
+        <di:waypoint x="580" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Task_SendRequest" bpmnElement="Task_SendRequest">
+        <dc:Bounds x="580" y="330" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Operator_End" bpmnElement="Flow_Operator_End">
+        <di:waypoint x="680" y="370" />
+        <di:waypoint x="742" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_EndEvent_OperatorProcess" bpmnElement="EndEvent_OperatorProcess">
+        <dc:Bounds x="742" y="352" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="721" y="393" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Participant_Meter" bpmnElement="Participant_Meter" isHorizontal="true">
+        <dc:Bounds x="160" y="510" width="1850" height="450" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_MeterProcess" bpmnElement="StartEvent_MeterProcess">
+        <dc:Bounds x="602" y="692" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="579" y="733" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Meter_Start" bpmnElement="Flow_Meter_Start">
+        <di:waypoint x="638" y="710" />
+        <di:waypoint x="735" y="710" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Gateway_IsActivation" bpmnElement="Gateway_IsActivation" isMarkerVisible="true">
+        <dc:Bounds x="735" y="685" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="715" y="648" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Meter_ActivationPath" bpmnElement="Flow_Meter_ActivationPath">
+        <di:waypoint x="760" y="685" />
+        <di:waypoint x="760" y="600" />
+        <di:waypoint x="835" y="600" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="790" y="582" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Gateway_NewCustomer" bpmnElement="Gateway_NewCustomer" isMarkerVisible="true">
+        <dc:Bounds x="835" y="575" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="818" y="545" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Meter_NewCustomerYes" bpmnElement="Flow_Meter_NewCustomerYes">
+        <di:waypoint x="885" y="600" />
+        <di:waypoint x="940" y="600" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="908" y="582" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Task_Deactivate60Days" bpmnElement="Task_Deactivate60Days">
+        <dc:Bounds x="940" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Meter_After60DayDeactivation" bpmnElement="Flow_Meter_After60DayDeactivation">
+        <di:waypoint x="1040" y="600" />
+        <di:waypoint x="1092" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Timer_60Days" bpmnElement="Timer_60Days">
+        <dc:Bounds x="1092" y="582" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1078" y="623" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Meter_AfterTimer" bpmnElement="Flow_Meter_AfterTimer">
+        <di:waypoint x="1110" y="618" />
+        <di:waypoint x="1110" y="655" />
+        <di:waypoint x="1080" y="655" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Meter_NewCustomerNo" bpmnElement="Flow_Meter_NewCustomerNo">
+        <di:waypoint x="860" y="625" />
+        <di:waypoint x="860" y="680" />
+        <di:waypoint x="1055" y="680" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="950" y="662" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Gateway_JoinActivate" bpmnElement="Gateway_JoinActivate" isMarkerVisible="true">
+        <dc:Bounds x="1055" y="655" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Meter_JoinToActivate" bpmnElement="Flow_Meter_JoinToActivate">
+        <di:waypoint x="1105" y="680" />
+        <di:waypoint x="1130" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Task_ActivateDisplay" bpmnElement="Task_ActivateDisplay">
+        <dc:Bounds x="1130" y="640" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_Meter_DeactivationPath" bpmnElement="Flow_Meter_DeactivationPath">
+        <di:waypoint x="760" y="735" />
+        <di:waypoint x="760" y="840" />
+        <di:waypoint x="830" y="840" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="788" y="822" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Task_DeactivateDisplay" bpmnElement="Task_DeactivateDisplay">
+        <dc:Bounds x="830" y="800" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_JoinReport" bpmnElement="Gateway_JoinReport" isMarkerVisible="true">
+        <dc:Bounds x="1055" y="815" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_ActivateToJoin" bpmnElement="Flow_ActivateToJoin">
+        <di:waypoint x="1180" y="720" />
+        <di:waypoint x="1180" y="840" />
+        <di:waypoint x="1105" y="840" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_DeactivateToJoin" bpmnElement="Flow_DeactivateToJoin">
+        <di:waypoint x="930" y="840" />
+        <di:waypoint x="1055" y="840" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_JoinToReport" bpmnElement="Flow_JoinToReport">
+        <di:waypoint x="1105" y="840" />
+        <di:waypoint x="1150" y="840" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Task_ReportStatus" bpmnElement="Task_ReportStatus">
+        <dc:Bounds x="1150" y="800" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_ReportToLog" bpmnElement="Flow_ReportToLog">
+        <di:waypoint x="1250" y="840" />
+        <di:waypoint x="1300" y="840" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Task_EnterInLogbook" bpmnElement="Task_EnterInLogbook">
+        <dc:Bounds x="1300" y="800" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_LogToEnd" bpmnElement="Flow_LogToEnd">
+        <di:waypoint x="1400" y="840" />
+        <di:waypoint x="1452" y="840" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_EndEvent_MeterProcessComplete" bpmnElement="EndEvent_MeterProcessComplete">
+        <dc:Bounds x="1452" y="822" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1428" y="863" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_CustomerToOperator" bpmnElement="MessageFlow_CustomerToOperator">
+        <di:waypoint x="370" y="190" />
+        <di:waypoint x="370" y="370" />
+        <di:waypoint x="286" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MessageFlow_OperatorToMeter" bpmnElement="MessageFlow_OperatorToMeter">
+        <di:waypoint x="630" y="410" />
+        <di:waypoint x="630" y="692" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
